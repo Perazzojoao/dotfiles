@@ -1,0 +1,21 @@
+repo = "*"
+
+[[tabs]]
+name = "codex"
+
+[[tabs.panes]]
+command = "codex --dangerously-bypass-approvals-and-sandbox"
+
+[[tabs.panes]]
+split = "right"
+
+[[tabs.panes]]
+split = "down"
+
+[[tabs]]
+name = "nvim"
+command = "nvim"
+
+[[tabs]]
+name = "reviewr"
+command = '~/.config/herdr/plugins/github/persiyanov.reviewr-e87b654a74f8/bin/herdr-reviewr "$PWD"'

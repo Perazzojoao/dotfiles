@@ -1,0 +1,20 @@
+# Preserve reproducible Neovim configuration while leaving this local checkout
+# and its agent/session state in place.
+RCS
+.+,v
+CVS
+\.\#.+
+\.cvsignore
+\.svn
+_darcs
+\.hg
+\.git
+.+~
+\#.*\#
+^/README.*
+^/LICENSE.*
+^/COPYING
+^/\.config/nvim/\.codex$
+^/\.config/nvim/\.agents$
+^/\.config/nvim/\.pi$
+^/\.config/nvim/nvim\.log$

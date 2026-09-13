@@ -1,0 +1,65 @@
+onboarding = false
+
+[theme]
+name = "catppuccin"
+
+auto_switch = false
+[ui.toast]
+delivery = "terminal"
+
+[ui]
+show_agent_labels_on_pane_borders = true
+
+agent_panel_sort = "priority"
+status_indicators = "dots"
+[ui.sound]
+enabled = true
+done_path = "sounds/done.mp3"
+request_path = "sounds/request.mp3"
+
+[remote]
+manage_ssh_config = true
+
+[experimental]
+pane_history = false
+
+[ui.sidebar.agents]
+row_gap = 0
+rows = [
+  ["state_icon", "workspace"],
+  ["agent"],
+]
+
+[keys]
+prefix = "alt+space"
+goto = "prefix+shift+s"
+navigate_workspace_up = "ctrl+k"
+navigate_workspace_down = "ctrl+j"
+next_tab = "alt+'"
+previous_tab = "prefix+p"
+
+[[keys.command]]
+key = "prefix+alt+h"
+type = "pane"
+command = "hunk diff --watch"
+description = "hunk: open in watch mode"
+
+[[keys.command]]
+key = "prefix+g"
+type = "popup"
+command = "lazygit"
+description = "lazygit: open"
+width = "95%"
+height = "95%"
+
+[[keys.command]]
+key = "prefix+f"
+type = "plugin_action"
+command = "cloudmanic.herdr-plus.projects"
+description = "herdr-plus: projects"
+
+[[keys.command]]
+key = "prefix+a"
+type = "plugin_action"
+command = "cloudmanic.herdr-plus.quick-actions"
+description = "herdr-plus: quick actions"

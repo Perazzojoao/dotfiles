@@ -1,0 +1,152 @@
+{
+  "version": 3,
+  "skills": {
+    "stitch-design": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google-labs-code/stitch-skills.git",
+      "skillPath": "skills/stitch-design/SKILL.md",
+      "skillFolderHash": "824aa2fe9eed4b4dfc9a855b54ef35b59fe36be1",
+      "installedAt": "2026-03-26T03:30:34.097Z",
+      "updatedAt": "2026-03-26T03:30:34.097Z"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/vercel-labs/skills.git",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "skillFolderHash": "3013fdeb8a11b10b1eb795ec3ae8bfca38f7c26d",
+      "installedAt": "2026-03-26T03:34:25.560Z",
+      "updatedAt": "2026-03-26T03:34:25.560Z"
+    },
+    "stitch-loop": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google-labs-code/stitch-skills.git",
+      "skillPath": "skills/stitch-loop/SKILL.md",
+      "skillFolderHash": "439a760b3c37eaa925fa994728f05b7618d99f8c",
+      "installedAt": "2026-03-26T03:34:50.735Z",
+      "updatedAt": "2026-03-26T03:34:50.735Z"
+    },
+    "shadcn-ui": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/google-labs-code/stitch-skills.git",
+      "skillPath": "skills/shadcn-ui/SKILL.md",
+      "skillFolderHash": "def8b780a6f3857ca964d1a02c144ef6f86fb21c",
+      "installedAt": "2026-03-26T05:38:57.736Z",
+      "updatedAt": "2026-03-26T05:38:57.736Z"
+    },
+    "jupyter-notebook": {
+      "source": "openai/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/openai/skills.git",
+      "skillPath": "skills/.curated/jupyter-notebook/SKILL.md",
+      "skillFolderHash": "ed23a98404260af659ef6bae9cb734bcfb0ca6c2",
+      "installedAt": "2026-05-10T17:51:21.129Z",
+      "updatedAt": "2026-05-10T17:51:21.129Z"
+    },
+    "pdf": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anthropics/skills.git",
+      "skillPath": "skills/pdf/SKILL.md",
+      "skillFolderHash": "6369f4649de69bd6857c9bc3b058a77206009238",
+      "pluginName": "document-skills",
+      "installedAt": "2026-05-26T01:51:40.877Z",
+      "updatedAt": "2026-05-26T01:51:40.877Z"
+    },
+    "docx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anthropics/skills.git",
+      "skillPath": "skills/docx/SKILL.md",
+      "skillFolderHash": "a0d216202f9793a78da44cf96aabe48f42e627ac",
+      "pluginName": "document-skills",
+      "installedAt": "2026-05-26T01:52:55.454Z",
+      "updatedAt": "2026-05-26T01:52:55.454Z"
+    },
+    "generate-test-cases": {
+      "source": "clear-solutions/unit-tests-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/clear-solutions/unit-tests-skills.git",
+      "skillPath": "skills/generate-test-cases/SKILL.md",
+      "skillFolderHash": "0fd22ce034eea2d3d6509e3dad551cda688fbabe",
+      "installedAt": "2026-06-02T01:17:08.413Z",
+      "updatedAt": "2026-06-02T01:17:08.413Z"
+    },
+    "generate-tests": {
+      "source": "clear-solutions/unit-tests-skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/clear-solutions/unit-tests-skills.git",
+      "skillPath": "skills/generate-tests/SKILL.md",
+      "skillFolderHash": "6add067aa7a3de1dee2efbb89874b2ff689b1fca",
+      "installedAt": "2026-06-02T01:17:08.414Z",
+      "updatedAt": "2026-06-02T01:17:08.414Z"
+    },
+    "jest": {
+      "source": "anivar/jest-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/anivar/jest-skill.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "5a3a32dabdd25b2ce953884147100a1f34beda56",
+      "installedAt": "2026-06-05T17:23:42.320Z",
+      "updatedAt": "2026-06-05T17:23:42.320Z"
+    },
+    "dry-refactoring": {
+      "source": "kucherenko/jscpd",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/kucherenko/jscpd.git",
+      "skillPath": "skills/dry-refactoring/SKILL.md",
+      "skillFolderHash": "badffcf472bbfce52385a1cf5266a4e224bc4483",
+      "installedAt": "2026-06-27T06:32:04.132Z",
+      "updatedAt": "2026-06-27T06:32:04.132Z"
+    },
+    "jscpd": {
+      "source": "kucherenko/jscpd",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/kucherenko/jscpd.git",
+      "skillPath": "skills/jscpd/SKILL.md",
+      "skillFolderHash": "4490e65778daa0cb561e824244d87e3b98de5c79",
+      "installedAt": "2026-06-27T06:32:50.038Z",
+      "updatedAt": "2026-06-27T06:32:50.038Z"
+    },
+    "orchestration": {
+      "source": "stablyai/orca",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/stablyai/orca.git",
+      "skillPath": "skills/orchestration/SKILL.md",
+      "skillFolderHash": "9aa26fde93c0592e5983cdca1ccd33b402802255",
+      "installedAt": "2026-07-24T04:52:47.183Z",
+      "updatedAt": "2026-07-24T04:52:47.183Z"
+    },
+    "terraform-skill": {
+      "source": "antonbabenko/terraform-skill",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/antonbabenko/terraform-skill.git",
+      "skillPath": "skills/terraform-skill/SKILL.md",
+      "skillFolderHash": "443fa8767d64c7f8859bdc54b6c370d06671070d",
+      "installedAt": "2026-07-31T19:30:24.872Z",
+      "updatedAt": "2026-07-31T19:30:24.872Z"
+    }
+  },
+  "dismissed": {
+    "findSkillsPrompt": true
+  },
+  "lastSelectedAgents": [
+    "amp",
+    "antigravity",
+    "antigravity-cli",
+    "cline",
+    "codex",
+    "cursor",
+    "deepagents",
+    "gemini-cli",
+    "github-copilot",
+    "kimi-code-cli",
+    "opencode",
+    "warp",
+    "zed",
+    "pi"
+  ]
+}

@@ -1,0 +1,4 @@
+base_branches = ["dev", "develop", "main", "master"]
+toggle_placement = "tab"
+auto_open = false
+navigator_position = "right"

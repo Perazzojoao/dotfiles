@@ -1,0 +1,22 @@
+#!/bin/sh
+
+toast_script="$(wslpath -w /home/perazzojoao/.config/herdr/bin/windows-toast.ps1)"
+
+case "${1:-}" in
+  *request.mp3)
+    title="Herdr precisa da sua atenção"
+    body="Um agente está bloqueado e aguarda sua intervenção."
+    windows_sound='Windows Notify System Generic.wav'
+    ;;
+  *)
+    title="Tarefa concluída no Herdr"
+    body="Um agente terminou sua tarefa."
+    windows_sound='Windows Notify.wav'
+    ;;
+esac
+
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+  -File "$toast_script" -Title "$title" -Body "$body"
+
+exec powershell.exe -NoLogo -NoProfile -NonInteractive -WindowStyle Hidden \
+  -Command "\$player = [System.Media.SoundPlayer]::new(\"\$env:WINDIR\\Media\\$windows_sound\"); \$player.Load(); \$player.PlaySync()"

@@ -1,0 +1,34 @@
+name = "Open Reviewr"
+description = "Open Reviewr in a new focused tab"
+type = "command"
+command = """
+reviewr_root="$(herdr plugin list --plugin persiyanov.reviewr --json | jq -er '.result.plugins[0].plugin_root')" &&
+reviewr_config="$(herdr plugin config-dir persiyanov.reviewr)" &&
+reviewr_context="$(jq -cn \
+  --arg workspace_id "$HERDR_PLUS_WORKSPACE_ID" \
+  --arg workspace_label "$HERDR_PLUS_WORKSPACE_LABEL" \
+  --arg workspace_cwd "$HERDR_PLUS_WORKDIR" \
+  --arg tab_id "$HERDR_PLUS_TAB_ID" \
+  --arg tab_label "$HERDR_PLUS_TAB_LABEL" \
+  --arg focused_pane_id "$HERDR_PLUS_PANE_ID" \
+  --arg focused_pane_cwd "$HERDR_PLUS_WORKDIR" \
+  --arg focused_pane_agent "$HERDR_PLUS_AGENT" \
+  '{
+    workspace_id: $workspace_id,
+    workspace_label: $workspace_label,
+    workspace_cwd: $workspace_cwd,
+    tab_id: $tab_id,
+    tab_label: $tab_label,
+    focused_pane_id: $focused_pane_id,
+    focused_pane_cwd: $focused_pane_cwd,
+    focused_pane_agent: $focused_pane_agent
+  }'
+)" &&
+HERDR_PLUGIN_ID="persiyanov.reviewr" \
+HERDR_PLUGIN_ROOT="$reviewr_root" \
+HERDR_PLUGIN_CONFIG_DIR="$reviewr_config" \
+HERDR_WORKSPACE_ID="$HERDR_PLUS_WORKSPACE_ID" \
+HERDR_PANE_ID="$HERDR_PLUS_PANE_ID" \
+HERDR_PLUGIN_CONTEXT_JSON="$reviewr_context" \
+bash "$reviewr_root/herdr/sidebar.sh" open
+"""

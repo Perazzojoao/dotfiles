@@ -1,0 +1,26 @@
+# Keep only reproducible Herdr configuration and user-owned assets in this
+# package. Runtime state, downloaded plugins, and machine-local registries stay
+# in ~/.config/herdr.
+RCS
+.+,v
+CVS
+\.\#.+
+\.cvsignore
+\.svn
+_darcs
+\.hg
+\.git
+\.gitignore
+.+~
+\#.*\#
+^/README.*
+^/LICENSE.*
+^/COPYING
+^/\.config/herdr/\.plugins\.lock$
+^/\.config/herdr/plugins\.json$
+^/\.config/herdr/release-notes\.json$
+^/\.config/herdr/session\.json$
+^/\.config/herdr/sessions$
+^/\.config/herdr/plugins/github$
+.+\.log
+.+\.sock

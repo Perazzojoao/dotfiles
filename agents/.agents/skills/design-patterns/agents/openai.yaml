@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Patterns"
+  short_description: "Apply design patterns without overengineering"
+  default_prompt: "Use $design-patterns to analyze this design problem and recommend or implement the simplest justified solution."
