@@ -23,10 +23,10 @@ require("conform").setup({
 		if disable_filetypes[vim.bo[bufnr].filetype] then
 			return nil
 		end
-		return { timeout_ms = vim.bo[bufnr].filetype == "cs" and 3000 or 500, lsp_format = "fallback" }
+		return { timeout_ms = vim.bo[bufnr].filetype == "cs" and 5000 or 500, lsp_format = "fallback" }
 	end,
 	formatters_by_ft = {
-		cs = { "csharpier" },
+		-- Roslyn honors .editorconfig, including the C# brace style.
 		java = { "google-java-format" },
 		lua = { "stylua" },
 		javascript = { "prettierd", "prettier", stop_after_first = true },
@@ -122,7 +122,7 @@ for i, name in ipairs(ensure_installed) do
 		ensure_installed[i] = lsp_to_mason[name]
 	end
 end
-vim.list_extend(ensure_installed, { "stylua", "prettierd", "prettier", "eslint_d", "google-java-format", "csharpier" })
+vim.list_extend(ensure_installed, { "stylua", "prettierd", "prettier", "eslint_d", "google-java-format" })
 require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 
 -- Apply server configs and enable them

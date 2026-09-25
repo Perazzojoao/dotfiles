@@ -1,0 +1,6 @@
+# Default C# style for projects without their own EditorConfig rules.
+[*.cs]
+indent_style = space
+indent_size = 2
+tab_width = 2
+csharp_new_line_before_open_brace = none

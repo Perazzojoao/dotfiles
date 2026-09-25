@@ -36,7 +36,6 @@ dotfiles/
 │       ├── lua/
 │       │   ├── config/
 │       │   │   ├── autocmds.lua
-│       │   │   ├── copilot_completion.lua
 │       │   │   ├── keymaps.lua
 │       │   │   ├── options.lua
 │       │   │   └── pack.lua
@@ -76,6 +75,8 @@ dotfiles/
 │           ├── skill-creator/         # 19 arquivos
 │           ├── terraform-skill/       # 9 arquivos
 │           └── use-railway/           # 25 arquivos
+├── editorconfig/                     # pacote: estilo C#/.NET
+│   └── .editorconfig                 # → ~/.editorconfig
 └── herdr/                            # pacote: Herdr
     ├── .stow-local-ignore            # exclui estado de execução
     └── .config/herdr/                # → ~/.config/herdr/
@@ -131,8 +132,8 @@ stow --verbose nvim
 Para vários pacotes:
 
 ```bash
-stow --simulate --verbose zsh nvim agents herdr
-stow --verbose zsh nvim agents herdr
+stow --simulate --verbose zsh nvim agents herdr editorconfig
+stow --verbose zsh nvim agents herdr editorconfig
 ```
 
 Uma simulação bem-sucedida termina com o aviso de que o modo de simulação não
@@ -249,7 +250,7 @@ readlink -f ~/.zshrc
 find ~ -maxdepth 4 -type l -lname '*dotfiles*' -print
 
 # Validar que os pacotes já aplicados não exigem mudanças
-stow --simulate --verbose zsh nvim agents herdr
+stow --simulate --verbose zsh nvim agents herdr editorconfig
 
 # Revisar alterações antes de versionar
 git diff --check

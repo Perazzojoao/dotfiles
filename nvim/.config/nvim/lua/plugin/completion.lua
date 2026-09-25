@@ -1,4 +1,4 @@
--- Completion: blink.cmp, LuaSnip, and Copilot through the Blink menu.
+-- Blink handles menu completion and snippets; Copilot shows inline suggestions.
 
 -- Build hooks must be registered before vim.pack.add() is called.
 vim.api.nvim_create_autocmd("PackChanged", {
@@ -15,12 +15,11 @@ vim.api.nvim_create_autocmd("PackChanged", {
 vim.pack.add({
 	-- Completion engine
 	{ src = "https://github.com/saghen/blink.cmp", version = vim.version.range("1.x") },
-	"https://github.com/giuxtaposition/blink-cmp-copilot",
 	-- Snippets
 	{ src = "https://github.com/L3MON4D3/LuaSnip", version = vim.version.range("2.x") },
 	-- Neovim Lua API completions
 	"https://github.com/folke/lazydev.nvim",
-	-- GitHub Copilot (provided through blink.cmp)
+	-- GitHub Copilot inline suggestions
 	"https://github.com/zbirenbaum/copilot.lua",
 })
 
@@ -38,11 +37,11 @@ require("snippets.typescript")
 require("snippets.react")
 require("snippets.csharp")
 
+vim.g.copilot_inline_enabled = vim.g.copilot_inline_enabled ~= false
+
 -- blink.cmp
 --- @module 'blink.cmp'
 --- @type blink.cmp.Config
-local copilot_completion = require("config.copilot_completion")
-
 require("blink.cmp").setup({
 	keymap = {
 		preset = "default",
@@ -50,7 +49,17 @@ require("blink.cmp").setup({
 			function(cmp)
 				if cmp.snippet_active({ direction = 1 }) then
 					cmp.hide()
+					if require("copilot.suggestion").is_visible() then
+						require("copilot.suggestion").dismiss()
+					end
 					return cmp.snippet_forward()
+				end
+				if not cmp.is_menu_visible() then
+					local suggestion = require("copilot.suggestion")
+					if suggestion.is_visible() then
+						suggestion.accept()
+						return true
+					end
 				end
 			end,
 			"select_and_accept",
@@ -63,6 +72,12 @@ require("blink.cmp").setup({
 	appearance = { nerd_font_variant = "mono" },
 	completion = {
 		trigger = { show_in_snippet = false },
+		list = { selection = { auto_insert = false } },
+		menu = {
+			auto_show = function()
+				return not vim.g.copilot_inline_enabled
+			end,
+		},
 		documentation = {
 			auto_show = true,
 			auto_show_delay_ms = 150,
@@ -70,18 +85,8 @@ require("blink.cmp").setup({
 		},
 	},
 	sources = {
-		default = { "lsp", "path", "snippets", "lazydev", "copilot" },
+		default = { "lsp", "path", "snippets", "lazydev" },
 		providers = {
-			copilot = {
-				name = "copilot",
-				module = "blink-cmp-copilot",
-				score_offset = 100,
-				async = true,
-				transform_items = copilot_completion.format_items,
-				enabled = function()
-					return vim.g.copilot_completion_enabled
-				end,
-			},
 			lazydev = { module = "lazydev.integrations.blink", score_offset = 100 },
 		},
 	},
@@ -90,12 +95,13 @@ require("blink.cmp").setup({
 	signature = { enabled = true },
 })
 
-vim.g.copilot_completion_enabled = vim.g.copilot_completion_enabled ~= false
-
--- Let Blink own all completion text edits. Inline Copilot suggestions and its
--- keymaps are disabled because they can race Blink while text is being typed.
 require("copilot").setup({
-	suggestion = { enabled = false },
+	suggestion = {
+		enabled = true,
+		auto_trigger = true,
+		trigger_on_accept = false,
+		keymap = { accept = false, accept_word = "<C-Right>" },
+	},
 	panel = { enabled = false },
 	filetypes = {
 		markdown = true,
@@ -110,11 +116,33 @@ require("copilot").setup({
 	},
 })
 
+vim.api.nvim_create_autocmd("User", {
+	pattern = { "BlinkCmpMenuOpen", "BlinkCmpMenuClose" },
+	group = vim.api.nvim_create_augroup("copilot-blink-menu", { clear = true }),
+	callback = function(event)
+		vim.b[event.buf].copilot_suggestion_hidden = event.match == "BlinkCmpMenuOpen"
+	end,
+})
+
+if not vim.g.copilot_inline_enabled then
+	require("copilot.command").disable()
+end
+
 vim.api.nvim_create_user_command("CopilotToggle", function()
-	vim.g.copilot_completion_enabled = not vim.g.copilot_completion_enabled
-	require("blink.cmp").hide()
-	vim.notify(("Sugestões do Copilot %s."):format(vim.g.copilot_completion_enabled and "habilitadas" or "desabilitadas"))
-end, { desc = "Enable or disable Copilot completion suggestions" })
+	vim.g.copilot_inline_enabled = not vim.g.copilot_inline_enabled
+	local command = require("copilot.command")
+	if vim.g.copilot_inline_enabled then
+		require("blink.cmp").hide()
+		command.enable()
+	else
+		local suggestion = require("copilot.suggestion")
+		if suggestion.is_visible() then
+			suggestion.dismiss()
+		end
+		command.disable()
+	end
+	vim.notify(("Sugestões do Copilot %s."):format(vim.g.copilot_inline_enabled and "habilitadas" or "desabilitadas"))
+end, { desc = "Enable or disable Copilot inline suggestions" })
 
 vim.keymap.set("n", "<leader>ca", "<cmd>Copilot auth<CR>", { desc = "[C]opilot [A]uthenticate" })
 vim.keymap.set("n", "<leader>ct", "<cmd>CopilotToggle<CR>", { desc = "[C]opilot [T]oggle suggestions" })

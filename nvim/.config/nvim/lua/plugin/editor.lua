@@ -17,7 +17,7 @@ vim.pack.add({
 	"https://github.com/NMAC427/guess-indent.nvim",
 	-- Todo comment highlights
 	"https://github.com/folke/todo-comments.nvim",
-	-- Paste images from clipboard into Markdown
+	--Paste images from clipboard into Markdown
 	"https://github.com/HakonHarnes/img-clip.nvim",
 	-- Persistent undo history tree (mapped to <F5>)
 	"https://github.com/mbbill/undotree",
@@ -73,7 +73,36 @@ require("auto-save").setup({
 })
 
 -- guess-indent
-require("guess-indent").setup({})
+local guess_indent = require("guess-indent")
+guess_indent.setup({
+	auto_cmd = false,
+	filetype_exclude = { "netrw", "tutor", "cs" },
+})
+
+local function guess_indent_unless_csharp(bufnr)
+	-- BufReadPost can run before filetype detection, so check the filename too.
+	if vim.api.nvim_buf_get_name(bufnr):match("%.cs$") then
+		return
+	end
+	guess_indent.set_from_buffer(bufnr, true, true)
+end
+
+vim.api.nvim_create_autocmd("BufReadPost", {
+	callback = function(event)
+		guess_indent_unless_csharp(event.buf)
+	end,
+})
+vim.api.nvim_create_autocmd("BufNewFile", {
+	callback = function(event)
+		vim.api.nvim_create_autocmd("BufWritePost", {
+			buffer = event.buf,
+			once = true,
+			callback = function(write_event)
+				guess_indent_unless_csharp(write_event.buf)
+			end,
+		})
+	end,
+})
 
 -- todo-comments
 require("todo-comments").setup({ signs = false })
