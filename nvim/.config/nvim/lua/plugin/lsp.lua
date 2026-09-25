@@ -40,6 +40,9 @@ vim.keymap.set("", "<leader>=", function()
 	require("conform").format({ async = true, lsp_format = "fallback" })
 end, { desc = "[F]ormat buffer" })
 
+vim.cmd([[nnoremenu PopUp.Code\ Actions <Cmd>lua vim.lsp.buf.code_action()<CR>]])
+vim.cmd([[vnoremenu PopUp.Code\ Actions <Cmd>lua vim.lsp.buf.code_action()<CR>]])
+
 local kubernetes_manifest_patterns = {
 	"**/k8s/**/*.yaml",
 	"**/k8s/**/*.yml",
@@ -135,6 +138,7 @@ for name, cfg in pairs(servers) do
 end
 
 -- LspAttach: keymaps and highlight on cursor
+local signature_help_group = vim.api.nvim_create_augroup("native-lsp-signature-help", { clear = true })
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
 	callback = function(event)
@@ -145,6 +149,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		map("grn", vim.lsp.buf.rename, "[R]e[n]ame")
 		map("gra", vim.lsp.buf.code_action, "[G]oto Code [A]ction", { "n", "x" })
+		map("gK", vim.lsp.buf.signature_help, "Show function signature")
 		map("grr", function()
 			require("snacks").picker.lsp_references()
 		end, "[G]oto [R]eferences")
@@ -174,6 +179,57 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		end
 
 		local client = vim.lsp.get_client_by_id(event.data.client_id)
+		if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_signatureHelp, event.buf) then
+			map("<C-k>", function()
+				vim.lsp.buf.signature_help({ focusable = false })
+			end, "Show function signature", "i")
+
+			vim.api.nvim_clear_autocmds({ group = signature_help_group, buffer = event.buf })
+			local trigger_characters = {}
+			for _, attached in ipairs(vim.lsp.get_clients({ bufnr = event.buf, method = "textDocument/signatureHelp" })) do
+				local provider = attached.server_capabilities.signatureHelpProvider
+				if type(provider) == "table" then
+					for _, character in ipairs(provider.triggerCharacters or {}) do
+						trigger_characters[character] = true
+					end
+					for _, character in ipairs(provider.retriggerCharacters or {}) do
+						trigger_characters[character] = true
+					end
+				end
+			end
+
+			local function show_insert_signature()
+				vim.schedule(function()
+					if vim.api.nvim_get_current_buf() == event.buf and vim.api.nvim_get_mode().mode:match("^[is]") then
+						vim.lsp.buf.signature_help({ silent = true, focusable = false })
+					end
+				end)
+			end
+
+			local typed_trigger = false
+			vim.api.nvim_create_autocmd("InsertCharPre", {
+				group = signature_help_group,
+				buffer = event.buf,
+				callback = function()
+					typed_trigger = trigger_characters[vim.v.char] == true
+				end,
+			})
+			vim.api.nvim_create_autocmd("TextChangedI", {
+				group = signature_help_group,
+				buffer = event.buf,
+				callback = function()
+					if typed_trigger then
+						typed_trigger = false
+						show_insert_signature()
+					end
+				end,
+			})
+			vim.api.nvim_create_autocmd({ "InsertEnter", "CursorHoldI" }, {
+				group = signature_help_group,
+				buffer = event.buf,
+				callback = show_insert_signature,
+			})
+		end
 		if
 			client
 			and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf)

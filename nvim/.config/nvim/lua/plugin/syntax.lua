@@ -16,11 +16,56 @@ if #missing_parsers > 0 then
 	require("nvim-treesitter").install(missing_parsers)
 end
 
+local function add_csharp_semicolon(bufnr)
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local row, col = cursor[1] - 1, cursor[2]
+	local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+	local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "c_sharp")
+	if not ok then
+		vim.notify("Parser C# indisponível; não é seguro localizar comentários.", vim.log.levels.WARN)
+		return
+	end
+	parser:parse()
+
+	local end_col = #line
+	while end_col > 0 do
+		while end_col > 0 and line:sub(end_col, end_col):match("%s") do
+			end_col = end_col - 1
+		end
+		if end_col == 0 then
+			return
+		end
+
+		local node = vim.treesitter.get_node({ bufnr = bufnr, pos = { row, end_col - 1 } })
+		while node and not node:type():find("comment", 1, true) do
+			node = node:parent()
+		end
+		if not node then
+			break
+		end
+
+		local start_row, start_col = node:range()
+		end_col = start_row < row and 0 or start_col
+	end
+
+	if end_col == 0 or line:sub(end_col, end_col) == ";" then
+		return
+	end
+
+	vim.api.nvim_buf_set_text(bufnr, row, end_col, row, end_col, { ";" })
+	vim.api.nvim_win_set_cursor(0, { cursor[1], col >= end_col and col + 1 or col })
+end
+
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "cs", "java" },
 	group = vim.api.nvim_create_augroup("language-treesitter-highlight", { clear = true }),
 	callback = function(event)
 		vim.treesitter.start(event.buf)
+		if vim.bo[event.buf].filetype == "cs" then
+			vim.keymap.set("n", "<leader>;", function()
+				add_csharp_semicolon(event.buf)
+			end, { buffer = event.buf, desc = "Add C# semicolon before trailing comments" })
+		end
 	end,
 })
 

@@ -45,6 +45,7 @@ vim.g.copilot_inline_enabled = vim.g.copilot_inline_enabled ~= false
 require("blink.cmp").setup({
 	keymap = {
 		preset = "default",
+		["<C-k>"] = false, -- Signature help is handled by the native LSP popup.
 		["<Tab>"] = {
 			function(cmp)
 				if cmp.snippet_active({ direction = 1 }) then
@@ -92,7 +93,7 @@ require("blink.cmp").setup({
 	},
 	snippets = { preset = "luasnip" },
 	fuzzy = { implementation = "prefer_rust_with_warning" },
-	signature = { enabled = true },
+	signature = { enabled = false },
 })
 
 require("copilot").setup({
