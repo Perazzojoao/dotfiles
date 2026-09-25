@@ -36,6 +36,7 @@ require("lazydev").setup({
 require("luasnip").setup({})
 require("snippets.typescript")
 require("snippets.react")
+require("snippets.csharp")
 
 -- blink.cmp
 --- @module 'blink.cmp'
@@ -45,13 +46,23 @@ local copilot_completion = require("config.copilot_completion")
 require("blink.cmp").setup({
 	keymap = {
 		preset = "default",
-		["<Tab>"] = { "select_and_accept", "snippet_forward", "fallback" },
+		["<Tab>"] = {
+			function(cmp)
+				if cmp.snippet_active({ direction = 1 }) then
+					cmp.hide()
+					return cmp.snippet_forward()
+				end
+			end,
+			"select_and_accept",
+			"fallback",
+		},
 		["<A-j>"] = { "select_next", "fallback" },
 		["<A-k>"] = { "select_prev", "fallback" },
 		["<Esc>"] = { "hide", "fallback" },
 	},
 	appearance = { nerd_font_variant = "mono" },
 	completion = {
+		trigger = { show_in_snippet = false },
 		documentation = {
 			auto_show = true,
 			auto_show_delay_ms = 150,

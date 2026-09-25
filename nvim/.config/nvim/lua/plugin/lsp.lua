@@ -23,9 +23,11 @@ require("conform").setup({
 		if disable_filetypes[vim.bo[bufnr].filetype] then
 			return nil
 		end
-		return { timeout_ms = 500, lsp_format = "fallback" }
+		return { timeout_ms = vim.bo[bufnr].filetype == "cs" and 3000 or 500, lsp_format = "fallback" }
 	end,
 	formatters_by_ft = {
+		cs = { "csharpier" },
+		java = { "google-java-format" },
 		lua = { "stylua" },
 		javascript = { "prettierd", "prettier", stop_after_first = true },
 		javascriptreact = { "prettierd", "prettier", stop_after_first = true },
@@ -55,6 +57,32 @@ local kubernetes_manifest_patterns = {
 local servers = {
 	-- clangd = {}, rust_analyzer = {}
 	gopls = {},
+	roslyn_ls = {},
+	jdtls = {
+		before_init = function(_, config)
+			local root = config.root_dir
+			if root and vim.fn.isdirectory(vim.fs.joinpath(root, "src")) == 1 then
+				-- JDTLS otherwise treats files under src/<package> as default-package files
+				-- in Java projects without Maven, Gradle, or Eclipse project metadata.
+				config.settings.java.project = { sourcePaths = { "src" } }
+			end
+		end,
+		settings = {
+			java = {
+				completion = {
+					favoriteStaticMembers = {
+						"java.util.Objects.requireNonNull",
+						"java.util.Objects.requireNonNullElse",
+						"org.junit.jupiter.api.Assertions.*",
+						"org.mockito.Mockito.*",
+					},
+				},
+				configuration = { updateBuildConfiguration = "interactive" },
+				implementationsCodeLens = { enabled = true },
+				referencesCodeLens = { enabled = true },
+			},
+		},
+	},
 	prismals = {},
 	pyright = {},
 	tailwindcss = {},
@@ -83,6 +111,7 @@ local servers = {
 local lsp_to_mason = {
 	lua_ls = "lua-language-server",
 	prismals = "prisma-language-server",
+	roslyn_ls = "roslyn-language-server",
 	tailwindcss = "tailwindcss-language-server",
 	ts_ls = "typescript-language-server",
 	yamlls = "yaml-language-server",
@@ -93,7 +122,7 @@ for i, name in ipairs(ensure_installed) do
 		ensure_installed[i] = lsp_to_mason[name]
 	end
 end
-vim.list_extend(ensure_installed, { "stylua", "prettierd", "prettier", "eslint_d" })
+vim.list_extend(ensure_installed, { "stylua", "prettierd", "prettier", "eslint_d", "google-java-format", "csharpier" })
 require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 
 -- Apply server configs and enable them

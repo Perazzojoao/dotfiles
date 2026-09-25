@@ -7,7 +7,7 @@ vim.pack.add({
 	"https://github.com/prisma/vim-prisma",
 })
 
-local treesitter_parsers = { "html", "javascript", "typescript", "tsx", "yaml" }
+local treesitter_parsers = { "c_sharp", "html", "java", "javascript", "typescript", "tsx", "yaml" }
 local missing_parsers = vim.tbl_filter(function(parser)
 	return #vim.api.nvim_get_runtime_file(("parser/%s.*"):format(parser), true) == 0
 end, treesitter_parsers)
@@ -15,6 +15,14 @@ end, treesitter_parsers)
 if #missing_parsers > 0 then
 	require("nvim-treesitter").install(missing_parsers)
 end
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "cs", "java" },
+	group = vim.api.nvim_create_augroup("language-treesitter-highlight", { clear = true }),
+	callback = function(event)
+		vim.treesitter.start(event.buf)
+	end,
+})
 
 vim.filetype.add({
 	extension = {

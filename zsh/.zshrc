@@ -198,3 +198,7 @@ export PATH="/home/perazzojoao/.local/bin:$PATH"
 # >>> railway initialize >>>
 source "$HOME/.railway/env"
 # <<< railway initialize <<<
+
+# .NET SDK and user-installed .NET tools
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$PATH"
