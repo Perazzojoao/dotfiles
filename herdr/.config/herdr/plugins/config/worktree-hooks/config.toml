@@ -3,7 +3,7 @@ silent = true
 created = [
   "pnpm install",
   "ln -s \"{repo_root}/.env\" .env",
-  "if [ -d \"{repo_root}/graphify-out\" ]; then cp \"{repo_root}/graphify-out\" graphify-out; fi",
+  "if [ -d \"{repo_root}/graphify-out\" ]; then cp -R \"{repo_root}/graphify-out\" .; fi",
 ]
 removed = [
   "if git remote get-url origin > /dev/null 2>&1 && test $(git rev-list --count 'origin/{branch}..{branch}') -eq 0; then git branch -D '{branch}'; fi",
@@ -13,7 +13,7 @@ removed = [
 silent = true
 created = [
   "ln -s \"{repo_root}/.env\" .env",
-  "if [ -d \"{repo_root}/graphify-out\" ]; then cp \"{repo_root}/graphify-out\" graphify-out; fi",
+  "if [ -d \"{repo_root}/graphify-out\" ]; then cp -R \"{repo_root}/graphify-out\" .; fi",
 ]
 removed = [
   "if git remote get-url origin > /dev/null 2>&1 && test $(git rev-list --count 'origin/{branch}..{branch}') -eq 0; then git branch -D '{branch}'; fi",
@@ -23,7 +23,7 @@ removed = [
 silent = true
 created = [
   "ln -s \"{repo_root}/.env\" .env",
-  "if [ -d \"{repo_root}/graphify-out\" ]; then cp \"{repo_root}/graphify-out\" graphify-out; fi",
+  "if [ -d \"{repo_root}/graphify-out\" ]; then cp -R \"{repo_root}/graphify-out\" .; fi",
 ]
 removed = [
   "if git remote get-url origin > /dev/null 2>&1 && test $(git rev-list --count 'origin/{branch}..{branch}') -eq 0; then git branch -D '{branch}'; fi",
