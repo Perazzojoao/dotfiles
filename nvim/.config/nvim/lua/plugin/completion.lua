@@ -55,12 +55,13 @@ require("blink.cmp").setup({
 					end
 					return cmp.snippet_forward()
 				end
-				if not cmp.is_menu_visible() then
-					local suggestion = require("copilot.suggestion")
-					if suggestion.is_visible() then
-						suggestion.accept()
-						return true
-					end
+				if cmp.is_menu_visible() then
+					return cmp.select_and_accept()
+				end
+				local suggestion = require("copilot.suggestion")
+				if suggestion.is_visible() then
+					suggestion.accept()
+					return true
 				end
 			end,
 			"select_and_accept",
@@ -74,11 +75,7 @@ require("blink.cmp").setup({
 	completion = {
 		trigger = { show_in_snippet = false },
 		list = { selection = { auto_insert = false } },
-		menu = {
-			auto_show = function()
-				return not vim.g.copilot_inline_enabled
-			end,
-		},
+		menu = { auto_show = true },
 		documentation = {
 			auto_show = true,
 			auto_show_delay_ms = 150,
@@ -133,7 +130,6 @@ vim.api.nvim_create_user_command("CopilotToggle", function()
 	vim.g.copilot_inline_enabled = not vim.g.copilot_inline_enabled
 	local command = require("copilot.command")
 	if vim.g.copilot_inline_enabled then
-		require("blink.cmp").hide()
 		command.enable()
 	else
 		local suggestion = require("copilot.suggestion")
