@@ -56,11 +56,44 @@ local kubernetes_manifest_patterns = {
 	"**/*.k8s.yml",
 }
 
+local roslyn_diagnostics_group = vim.api.nvim_create_augroup("roslyn-lsp-diagnostics", { clear = true })
+local function refresh_roslyn_diagnostics(client)
+	for bufnr in pairs(client.attached_buffers) do
+		if vim.api.nvim_buf_is_loaded(bufnr) then
+			-- Native refresh preserves provider identifiers and result IDs. Unnamed
+			-- pulls create a separate namespace and duplicate the named providers.
+			vim.lsp.diagnostic._refresh(bufnr, client.id)
+		end
+	end
+end
+
 -- LSP servers to configure
 local servers = {
 	-- clangd = {}, rust_analyzer = {}
 	gopls = {},
-	roslyn_ls = {},
+	roslyn_ls = {
+		handlers = {
+			["workspace/projectInitializationComplete"] = function(_, _, ctx)
+				vim.notify("Roslyn project initialization complete", vim.log.levels.INFO, { title = "roslyn_ls" })
+				local client = vim.lsp.get_client_by_id(ctx.client_id)
+				if client then
+					refresh_roslyn_diagnostics(client)
+				end
+				return vim.NIL
+			end,
+		},
+		on_attach = function(client, bufnr)
+			vim.api.nvim_clear_autocmds({ group = roslyn_diagnostics_group, buffer = bufnr })
+			vim.api.nvim_create_autocmd({ "BufWritePost", "InsertLeave" }, {
+				group = roslyn_diagnostics_group,
+				buffer = bufnr,
+				callback = function()
+					refresh_roslyn_diagnostics(client)
+				end,
+				desc = "roslyn_ls: refresh provider diagnostics",
+			})
+		end,
+	},
 	jdtls = {
 		before_init = function(_, config)
 			local root = config.root_dir
@@ -138,6 +171,14 @@ for name, cfg in pairs(servers) do
 end
 
 -- LspAttach: keymaps and highlight on cursor
+local lsp_popup_border = "rounded"
+local function show_lsp_hover()
+	vim.lsp.buf.hover({ border = lsp_popup_border })
+end
+local function show_lsp_signature(opts)
+	vim.lsp.buf.signature_help(vim.tbl_extend("force", { border = lsp_popup_border }, opts or {}))
+end
+
 local signature_help_group = vim.api.nvim_create_augroup("native-lsp-signature-help", { clear = true })
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
@@ -149,7 +190,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		map("grn", vim.lsp.buf.rename, "[R]e[n]ame")
 		map("gra", vim.lsp.buf.code_action, "[G]oto Code [A]ction", { "n", "x" })
-		map("gK", vim.lsp.buf.signature_help, "Show function signature")
+		map("H", show_lsp_hover, "Show hover information")
+		map("gK", show_lsp_signature, "Show function signature")
 		map("grr", function()
 			require("snacks").picker.lsp_references()
 		end, "[G]oto [R]eferences")
@@ -181,7 +223,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		local client = vim.lsp.get_client_by_id(event.data.client_id)
 		if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_signatureHelp, event.buf) then
 			map("<C-k>", function()
-				vim.lsp.buf.signature_help({ focusable = false })
+				show_lsp_signature({ focusable = false })
 			end, "Show function signature", "i")
 
 			vim.api.nvim_clear_autocmds({ group = signature_help_group, buffer = event.buf })
@@ -201,7 +243,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 			local function show_insert_signature()
 				vim.schedule(function()
 					if vim.api.nvim_get_current_buf() == event.buf and vim.api.nvim_get_mode().mode:match("^[is]") then
-						vim.lsp.buf.signature_help({ silent = true, focusable = false })
+						show_lsp_signature({ silent = true, focusable = false })
 					end
 				end)
 			end
@@ -258,7 +300,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 vim.diagnostic.config({
 	severity_sort = true,
-	float = { border = "rounded", source = "if_many" },
+	float = { border = lsp_popup_border, source = "if_many" },
 	underline = { severity = vim.diagnostic.severity.ERROR },
 	signs = vim.g.have_nerd_font and {
 		text = {

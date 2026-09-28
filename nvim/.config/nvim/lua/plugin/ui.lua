@@ -78,6 +78,11 @@ require("mini.cmdline").setup({
 	},
 })
 require("mini.diff").setup()
+local function recording_register()
+	local register = vim.fn.reg_recording()
+	return register ~= "" and ("REC @%s"):format(register) or ""
+end
+
 require("lualine").setup({
 	options = {
 		icons_enabled = vim.g.have_nerd_font,
@@ -90,7 +95,7 @@ require("lualine").setup({
 		lualine_a = { "mode" },
 		lualine_b = { "branch" },
 		lualine_c = { { "filename", path = 1 } },
-		lualine_x = { "filetype" },
+		lualine_x = { recording_register, "filetype" },
 		lualine_y = { "searchcount" },
 		lualine_z = { "location" },
 	},
@@ -102,6 +107,15 @@ require("lualine").setup({
 		lualine_y = {},
 		lualine_z = {},
 	},
+})
+
+vim.api.nvim_create_autocmd({ "RecordingEnter", "RecordingLeave" }, {
+	group = vim.api.nvim_create_augroup("lualine_macro_recording", { clear = true }),
+	callback = function()
+		vim.schedule(function()
+			require("lualine").refresh()
+		end)
+	end,
 })
 
 -- neoscroll

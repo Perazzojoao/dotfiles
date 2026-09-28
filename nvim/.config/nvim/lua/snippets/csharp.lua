@@ -38,6 +38,13 @@ ls.add_snippets("cs", {
 		})
 	),
 	s(
+		"propprivate",
+		fmt("public {} {} {{ get; private set; }}", {
+			i(1, "string"),
+			i(2, "Name"),
+		})
+	),
+	s(
 		"ctor",
 		fmt("public {}({})\n{{\n\t{}\n}}", {
 			i(1, "ClassName"),

@@ -39,6 +39,29 @@ require("snippets.csharp")
 
 vim.g.copilot_inline_enabled = vim.g.copilot_inline_enabled ~= false
 
+local function handle_completion_tab(cmp)
+	-- LuaSnip's global jumpable state can outlive the snippet under the cursor.
+	if require("luasnip").locally_jumpable(1) then
+		cmp.hide()
+		local suggestion = require("copilot.suggestion")
+		if suggestion.is_visible() then
+			suggestion.dismiss()
+		end
+		return cmp.snippet_forward()
+	end
+	if cmp.is_menu_visible() then
+		return cmp.select_and_accept()
+	end
+	if cmp.snippet_active({ direction = 1 }) then
+		return cmp.snippet_forward()
+	end
+	local suggestion = require("copilot.suggestion")
+	if suggestion.is_visible() then
+		suggestion.accept()
+		return true
+	end
+end
+
 -- blink.cmp
 --- @module 'blink.cmp'
 --- @type blink.cmp.Config
@@ -47,23 +70,7 @@ require("blink.cmp").setup({
 		preset = "default",
 		["<C-k>"] = false, -- Signature help is handled by the native LSP popup.
 		["<Tab>"] = {
-			function(cmp)
-				if cmp.snippet_active({ direction = 1 }) then
-					cmp.hide()
-					if require("copilot.suggestion").is_visible() then
-						require("copilot.suggestion").dismiss()
-					end
-					return cmp.snippet_forward()
-				end
-				if cmp.is_menu_visible() then
-					return cmp.select_and_accept()
-				end
-				local suggestion = require("copilot.suggestion")
-				if suggestion.is_visible() then
-					suggestion.accept()
-					return true
-				end
-			end,
+			handle_completion_tab,
 			"select_and_accept",
 			"fallback",
 		},
@@ -75,11 +82,17 @@ require("blink.cmp").setup({
 	completion = {
 		trigger = { show_in_snippet = false },
 		list = { selection = { auto_insert = false } },
-		menu = { auto_show = true },
+		menu = { border = "rounded", auto_show = true },
 		documentation = {
 			auto_show = true,
 			auto_show_delay_ms = 150,
-			window = { max_width = 72, max_height = 16, desired_min_width = 50, desired_min_height = 8 },
+			window = {
+				border = "rounded",
+				max_width = 72,
+				max_height = 16,
+				desired_min_width = 50,
+				desired_min_height = 8,
+			},
 		},
 	},
 	sources = {
@@ -113,6 +126,19 @@ require("copilot").setup({
 		["."] = false,
 	},
 })
+
+-- Blink installs its buffer-local Tab mapping after the fuzzy matcher initializes.
+-- Keep Copilot acceptance available while that asynchronous setup is pending.
+vim.keymap.set("i", "<Tab>", function()
+	if handle_completion_tab(require("blink.cmp")) then
+		return ""
+	end
+	if vim.snippet.active({ direction = 1 }) then
+		vim.snippet.jump(1)
+		return ""
+	end
+	return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+end, { expr = true, replace_keycodes = false, desc = "Completion Tab fallback while Blink loads" })
 
 vim.api.nvim_create_autocmd("User", {
 	pattern = { "BlinkCmpMenuOpen", "BlinkCmpMenuClose" },

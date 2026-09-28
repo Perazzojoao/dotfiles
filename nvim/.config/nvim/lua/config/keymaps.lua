@@ -225,7 +225,7 @@ keymap("n", "<leader>q", close_current_buffer_safely, { desc = "Close buffer", n
 
 -- Saving file
 keymap("n", "<C-s>", ":w<CR>", { noremap = true, silent = true })
-keymap("i", "<C-s>", "<C-o><cmd>write<CR>", { noremap = true, silent = true })
+keymap("i", "<C-s>", "<C-o><cmd>write<CR><Esc>", { noremap = true, silent = true })
 
 -- Split window
 keymap("n", "<leader>l", function()
