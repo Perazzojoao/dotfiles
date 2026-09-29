@@ -6,6 +6,8 @@ vim.pack.add({
 	-- Statusline
 	"https://github.com/nvim-lualine/lualine.nvim",
 	"https://github.com/nvim-tree/nvim-web-devicons",
+	-- Cursor-line number follows the configured statusline mode color
+	"https://github.com/mawkler/modicator.nvim",
 	-- Dashboard / start screen
 	"https://github.com/goolord/alpha-nvim",
 	-- Smooth animated scrolling
@@ -408,4 +410,18 @@ end, { expr = true, desc = "Track scrollbar drag" })
 vim.keymap.set({ "n", "x", "s" }, "<LeftRelease>", end_scrollbar_drag, {
 	expr = true,
 	desc = "End scrollbar drag",
+})
+
+-- Modicator only creates mode highlights once, so lualine must be configured first.
+vim.o.termguicolors = true
+vim.o.cursorline = true
+vim.o.number = true
+require("modicator").setup({
+	integration = {
+		lualine = {
+			enabled = true,
+			mode_section = "a",
+			highlight = "bg",
+		},
+	},
 })
