@@ -12,6 +12,7 @@ end
 
 require_plugin("plugin.00-colorscheme")
 require_plugin("plugin.01-snack")
+require_plugin("plugin.templates")
 require_plugin("plugin.syntax")
 require_plugin("plugin.markdown")
 require_plugin("plugin.notebook")
