@@ -231,7 +231,12 @@ keymap("i", "<C-s>", "<C-o><cmd>write<CR><Esc>", { noremap = true, silent = true
 keymap("n", "<leader>l", function()
 	move_buffer_to_split("right")
 end, { desc = "Move Buffer to Right Split", noremap = true, silent = true })
-keymap("n", "<leader>h", close_current_split_and_keep_buffer_focused, { desc = "Close Split and Focus Buffer", noremap = true, silent = true })
+keymap(
+	"n",
+	"<leader>h",
+	close_current_split_and_keep_buffer_focused,
+	{ desc = "Close Split and Focus Buffer", noremap = true, silent = true }
+)
 
 -- Tabs
 keymap("n", "<leader>tt", ":tabedit<CR>", { desc = "", noremap = true, silent = true })

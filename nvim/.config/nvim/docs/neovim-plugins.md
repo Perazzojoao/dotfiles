@@ -12,11 +12,14 @@ O tabout é carregado por `lua/plugin/tabout.lua`, com `tabkey = ""`, `backwards
 | Tab antes dos mappings locais do Blink | Mesma precedência anterior → snippet nativo do Neovim → tabout → Tab original |
 | Shift-Tab em Insert/Select | Snippet anterior → tabout para trás (somente Insert) → fallback original |
 | Tab / Shift-Tab em Normal | `:tabnext` / `:tabprev`, preservados |
+| Tab / Shift-Tab no cmdline (`:`, `/`, `?`) | Próxima/anterior sugestão do menu nativo, gerenciado pelo mini.cmdline |
 | Prompt, terminal, buffers especiais ou sem parser | O tabout não navega; os handlers anteriores permanecem responsáveis |
 
 Use `:TaboutToggle` para alternar o tabout sem remover os mappings do Blink. O plugin também registra `:Tabout` e `:TaboutBack` (depreciados pelo upstream) e os quatro mappings `<Plug>(Tabout)`, `<Plug>(TaboutBack)`, `<Plug>(TaboutMulti)` e `<Plug>(TaboutBackMulti)`. [API e requisitos oficiais](https://github.com/abecodes/tabout.nvim#more-complex-keybindings).
 
 O adaptador consulta o alvo pelo Tree-sitter e agenda o salto: mappings de expressão do Neovim restauram o cursor ao terminar a avaliação. A execução também verifica que o buffer, a janela e o cursor continuam os mesmos.
+
+A linha de comando usa a interface nativa `ui2` e a conclusão automática do `mini.cmdline`. O Blink tem `cmdline.enabled = false` para evitar capturar as teclas de navegação de um menu nativo aberto. No cmdline, Tab/Shift-Tab e Ctrl-n/Ctrl-p percorrem sugestões. Com o menu aberto, ↑/↓ e Alt+k/j também percorrem sugestões; com o menu fechado, as setas verticais navegam pelo histórico. As setas horizontais editam o texto. A autocorreção do mini.cmdline fica desativada com `autocorrect.enable = false`. A regressão é coberta por `python3 tests/cmdline_tui.py`, incluindo comandos, buscas com `/` e `?` e o caso `/comm` em um arquivo Lua real.
 
 ## Inventário por plugin
 

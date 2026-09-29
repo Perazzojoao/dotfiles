@@ -9,9 +9,9 @@ local function context(filetype, line, column)
 	return { bufnr = buffer, line = line, cursor = { 1, column } }
 end
 
-local function check(name, ctx, items, expected)
+local function check(name, ctx, items, expected, first_sort)
 	local sorts = ranking.sorts_for_context(ctx)
-	assert(sorts[1] == ranking.compare_groups, name .. ": sorter contextual não ativo")
+	assert(sorts[1] == (first_sort or ranking.compare_groups), name .. ": sorter contextual não ativo")
 	require("blink.cmp.fuzzy.sort").sort(items, sorts)
 	local labels = vim.tbl_map(function(item)
 		return item.label
@@ -38,8 +38,11 @@ local function run()
 		{ label = "MinhaVariavel", kind = kinds.Variable, source_id = "lsp", score = 8 },
 		{ label = "GetType", kind = kinds.Method, source_id = "lsp", score = 200 },
 		{ label = "Snippet", kind = kinds.Snippet, source_id = "snippets", score = 999 },
+		{ label = "SnippetMetodo", kind = kinds.Method, source_id = "snippets", score = 1001 },
+		{ label = "SnippetLsp", kind = kinds.Snippet, source_id = "lsp", score = 1000 },
 		{ label = "Funcao", kind = kinds.Function, source_id = "lsp", score = 4 },
 		{ label = "MinhaConstante", kind = kinds.Constant, source_id = "lsp", score = 1 },
+		{ label = "TipoGenerico", kind = kinds.TypeParameter, source_id = "lsp", score = 1 },
 	}, {
 		"MinhaVariavel",
 		"MinhaPropriedade",
@@ -51,6 +54,9 @@ local function run()
 		"GetType",
 		"ToString",
 		"Classe",
+		"TipoGenerico",
+		"SnippetMetodo",
+		"SnippetLsp",
 		"Snippet",
 	})
 
@@ -64,8 +70,28 @@ local function run()
 		{ label = "Propriedade", kind = kinds.Property, source_id = "lsp", score = 1 },
 	}, { "Propriedade", "Metodo" })
 
+	check(
+		"acesso a membro TypeScript deixa snippets depois de todos os outros itens",
+		context("typescript", "teste?.me", 9),
+		{
+			{ label = "SnippetLsp", kind = kinds.Snippet, source_id = "lsp", score = 1000 },
+			{ label = "Campo", kind = kinds.Field, source_id = "lsp", score = 5 },
+			{ label = "SnippetFonte", kind = kinds.Method, source_id = "snippets", score = 2000 },
+			{ label = "Metodo", kind = kinds.Method, source_id = "lsp", score = 10 },
+			{ label = "Tipo", kind = kinds.TypeParameter, source_id = "lsp", score = 1 },
+		},
+		{ "Metodo", "Campo", "Tipo", "SnippetFonte", "SnippetLsp" },
+		ranking.compare_snippets
+	)
+
+	check("método Lua com dois-pontos também deixa snippets por último", context("lua", "teste:me", 8), {
+		{ label = "Snippet", kind = kinds.Snippet, source_id = "snippets", score = 100 },
+		{ label = "Metodo", kind = kinds.Method, source_id = "lsp", score = 1 },
+	}, { "Metodo", "Snippet" }, ranking.compare_snippets)
+
 	assert(vim.deep_equal(ranking.sorts_for_context(context("cs", "teste", 5)), { "score", "sort_text" }))
-	assert(vim.deep_equal(ranking.sorts_for_context(context("lua", "teste.", 6)), { "score", "sort_text" }))
+	assert(vim.deep_equal(ranking.sorts_for_context(context("lua", "teste", 5)), { "score", "sort_text" }))
+	assert(vim.deep_equal(ranking.sorts_for_context(context("markdown", "teste.", 6)), { "score", "sort_text" }))
 	cases = cases + 1
 	print("PASS demais contextos preservam a ordenação original")
 end

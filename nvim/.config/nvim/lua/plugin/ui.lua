@@ -73,12 +73,18 @@ require("mini.icons").setup()
 require("mini.ai").setup({ n_lines = 500 })
 require("mini.surround").setup()
 require("mini.cmdline").setup({
-	autocorrect = { enabled = false },
+	autocorrect = { enable = false },
 	autocomplete = {
-		enabled = true,
+		enable = true,
 		delay = 0,
 	},
 })
+-- Prefer suggestions while the native menu is open; retain history otherwise.
+for key, direction in pairs({ ["<Down>"] = "<C-n>", ["<Up>"] = "<C-p>", ["<A-j>"] = "<C-n>", ["<A-k>"] = "<C-p>" }) do
+	vim.keymap.set("c", key, function()
+		return vim.fn.wildmenumode() == 1 and direction or key
+	end, { expr = true, desc = "Navigate cmdline suggestions or use original key" })
+end
 require("mini.diff").setup()
 local function recording_register()
 	local register = vim.fn.reg_recording()

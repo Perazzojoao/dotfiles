@@ -105,6 +105,8 @@ require("blink.cmp").setup({
 	},
 	snippets = { preset = "luasnip" },
 	fuzzy = { implementation = "prefer_rust_with_warning", sorts = require("config.completion_ranking").sorts },
+	-- mini.cmdline owns native command-line completion and navigation.
+	cmdline = { enabled = false },
 	signature = { enabled = false },
 })
 
