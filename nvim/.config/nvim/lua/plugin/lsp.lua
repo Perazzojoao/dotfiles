@@ -179,7 +179,93 @@ local function show_lsp_signature(opts)
 	vim.lsp.buf.signature_help(vim.tbl_extend("force", { border = lsp_popup_border }, opts or {}))
 end
 
+local insert_signature_opts = { focusable = false, close_events = { "InsertLeave" } }
 local signature_help_group = vim.api.nvim_create_augroup("native-lsp-signature-help", { clear = true })
+local signature_menu_group = vim.api.nvim_create_augroup("native-lsp-signature-menu", { clear = true })
+local signature_hidden_by_user = {}
+
+local function insert_signature_win(bufnr)
+	if not vim.api.nvim_buf_is_valid(bufnr) then
+		return
+	end
+	local win = vim.b[bufnr].lsp_floating_preview
+	if win and vim.api.nvim_win_is_valid(win) and vim.w[win]["textDocument/signatureHelp"] == bufnr then
+		return win
+	end
+end
+
+local function close_insert_signature(bufnr)
+	local win = insert_signature_win(bufnr)
+	if win then
+		vim.api.nvim_win_close(win, true)
+	end
+end
+
+local function show_insert_signature(bufnr, silent)
+	vim.schedule(function()
+		if
+			vim.api.nvim_get_current_buf() ~= bufnr
+			or not vim.api.nvim_get_mode().mode:match("^[is]")
+			or signature_hidden_by_user[bufnr]
+			or require("blink.cmp").is_menu_visible()
+			or #vim.lsp.get_clients({ bufnr = bufnr, method = "textDocument/signatureHelp" }) == 0
+		then
+			return
+		end
+		show_lsp_signature(vim.tbl_extend("force", { silent = silent }, insert_signature_opts))
+	end)
+end
+
+local function toggle_insert_signature(bufnr)
+	local blink = require("blink.cmp")
+	if blink.is_menu_visible() then
+		signature_hidden_by_user[bufnr] = nil
+		blink.hide()
+		return
+	end
+	if insert_signature_win(bufnr) then
+		signature_hidden_by_user[bufnr] = true
+		close_insert_signature(bufnr)
+	else
+		signature_hidden_by_user[bufnr] = nil
+		show_insert_signature(bufnr, false)
+	end
+end
+
+vim.api.nvim_create_autocmd("User", {
+	group = signature_menu_group,
+	pattern = { "BlinkCmpMenuOpen", "BlinkCmpMenuClose" },
+	callback = function(event)
+		if event.match == "BlinkCmpMenuOpen" then
+			close_insert_signature(event.buf)
+		else
+			show_insert_signature(event.buf, true)
+		end
+	end,
+})
+
+-- A pending LSP response can arrive after Blink opens. Close that late float.
+vim.api.nvim_create_autocmd("WinNew", {
+	group = signature_menu_group,
+	callback = function()
+		local bufnr = vim.api.nvim_get_current_buf()
+		vim.schedule(function()
+			if signature_hidden_by_user[bufnr] or require("blink.cmp").is_menu_visible() then
+				close_insert_signature(bufnr)
+			end
+		end)
+	end,
+})
+
+vim.api.nvim_create_autocmd("User", {
+	group = signature_menu_group,
+	pattern = "TaboutAfter",
+	callback = function(event)
+		close_insert_signature(event.buf)
+		show_insert_signature(event.buf, true)
+	end,
+})
+
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
 	callback = function(event)
@@ -221,10 +307,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		end
 
 		local client = vim.lsp.get_client_by_id(event.data.client_id)
-		if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_signatureHelp, event.buf) then
+		if
+			client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_signatureHelp, event.buf)
+		then
 			map("<C-k>", function()
-				show_lsp_signature({ focusable = false })
-			end, "Show function signature", "i")
+				toggle_insert_signature(event.buf)
+			end, "Toggle function signature", "i")
 
 			vim.api.nvim_clear_autocmds({ group = signature_help_group, buffer = event.buf })
 			local trigger_characters = {}
@@ -240,20 +328,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
 				end
 			end
 
-			local function show_insert_signature()
-				vim.schedule(function()
-					if vim.api.nvim_get_current_buf() == event.buf and vim.api.nvim_get_mode().mode:match("^[is]") then
-						show_lsp_signature({ silent = true, focusable = false })
-					end
-				end)
-			end
-
-			local typed_trigger = false
+			local typed_trigger = nil
 			vim.api.nvim_create_autocmd("InsertCharPre", {
 				group = signature_help_group,
 				buffer = event.buf,
 				callback = function()
-					typed_trigger = trigger_characters[vim.v.char] == true
+					typed_trigger = trigger_characters[vim.v.char] and vim.v.char or nil
 				end,
 			})
 			vim.api.nvim_create_autocmd("TextChangedI", {
@@ -261,15 +341,27 @@ vim.api.nvim_create_autocmd("LspAttach", {
 				buffer = event.buf,
 				callback = function()
 					if typed_trigger then
+						if typed_trigger == "(" then
+							signature_hidden_by_user[event.buf] = nil
+						end
 						typed_trigger = false
-						show_insert_signature()
+						show_insert_signature(event.buf, true)
 					end
 				end,
 			})
 			vim.api.nvim_create_autocmd({ "InsertEnter", "CursorHoldI" }, {
 				group = signature_help_group,
 				buffer = event.buf,
-				callback = show_insert_signature,
+				callback = function()
+					show_insert_signature(event.buf, true)
+				end,
+			})
+			vim.api.nvim_create_autocmd("InsertLeave", {
+				group = signature_help_group,
+				buffer = event.buf,
+				callback = function()
+					signature_hidden_by_user[event.buf] = nil
+				end,
 			})
 		end
 		if

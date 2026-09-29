@@ -72,8 +72,10 @@ require("blink.cmp").setup({
 		["<Tab>"] = {
 			handle_completion_tab,
 			"select_and_accept",
+			require("config.tabout").forward,
 			"fallback",
 		},
+		["<S-Tab>"] = { "snippet_backward", require("config.tabout").backward, "fallback" },
 		["<A-j>"] = { "select_next", "fallback" },
 		["<A-k>"] = { "select_prev", "fallback" },
 		["<Esc>"] = { "hide", "fallback" },
@@ -102,7 +104,7 @@ require("blink.cmp").setup({
 		},
 	},
 	snippets = { preset = "luasnip" },
-	fuzzy = { implementation = "prefer_rust_with_warning" },
+	fuzzy = { implementation = "prefer_rust_with_warning", sorts = require("config.completion_ranking").sorts },
 	signature = { enabled = false },
 })
 
@@ -135,6 +137,9 @@ vim.keymap.set("i", "<Tab>", function()
 	end
 	if vim.snippet.active({ direction = 1 }) then
 		vim.snippet.jump(1)
+		return ""
+	end
+	if require("config.tabout").forward() then
 		return ""
 	end
 	return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
