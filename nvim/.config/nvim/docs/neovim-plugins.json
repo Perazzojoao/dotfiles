@@ -152,7 +152,7 @@
         ":BlinkCmp {subcommand} (plugin load; subcomandos validados em plugin/blink-cmp.lua)"
       ],
       "mappings": [
-        "Insert <Tab>: local LuaSnip jump → visible menu accept → snippet_forward → Copilot accept → fallback. Config also installs temporary global Insert <Tab> while Blink initializes. Default preset includes Insert <S-Tab> snippet_backward. Config disables <C-k>."
+        "Insert <Tab>: visible menu accept → Copilot accept → local LuaSnip jump → snippet_forward → fallback. Config also installs temporary global Insert <Tab> while Blink initializes. Default preset includes Insert <S-Tab> snippet_backward. Insert <Esc> dismisses visible Copilot suggestions while retaining Insert; otherwise hides completion and exits Insert. Config disables <C-k>."
       ],
       "purpose": "completion LSP/path/snippets/Lua API",
       "source_evidence": [
@@ -245,7 +245,7 @@
         "Config: :CopilotToggle (lua/plugin/completion.lua)"
       ],
       "mappings": [
-        "Config Insert accept: <Tab> dispatched by Blink; accept_word <C-Right>; accept default disabled; Normal <leader>ca auth and <leader>ct toggle.",
+        "Config Insert accept: <Tab> dispatched by Blink; accept_word <C-Right>; dismiss <Esc> dispatched by Blink/global fallback; plugin accept/dismiss defaults disabled; Normal <leader>ca auth and <leader>ct toggle.",
         "Config Normal <leader>ct toggles inline suggestions; <leader>ca authenticates."
       ],
       "purpose": "sugestões inline do Copilot",

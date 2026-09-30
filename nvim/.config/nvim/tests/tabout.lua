@@ -1,6 +1,7 @@
 -- Run after normal startup: nvim --headless -i NONE -c 'luafile tests/tabout.lua'
 local config = require("blink.cmp.config")
 local handler = config.keymap["<Tab>"][1]
+local escape_handler = config.keymap["<Esc>"][1]
 local original_snippets = package.loaded["luasnip"]
 local original_suggestion = package.loaded["copilot.suggestion"]
 local original_blink = package.loaded["blink.cmp"]
@@ -48,15 +49,21 @@ local function run()
 		end,
 		dismiss = function()
 			record("dismiss")
+			state.copilot = false
 		end,
 		accept = function()
 			record("copilot")
 		end,
 	}
 	check(
-		"salto local do snippet antes do menu e Copilot",
+		"menu antes do salto local do snippet e Copilot",
 		{ local_snippet = true, menu = true, copilot = true },
-		{ "hide", "dismiss", "snippet" }
+		{ "menu" }
+	)
+	check(
+		"Copilot antes do salto local do snippet com menu fechado",
+		{ local_snippet = true, copilot = true },
+		{ "copilot" }
 	)
 	check(
 		"menu antes de estado antigo de snippet e Copilot",
@@ -64,9 +71,31 @@ local function run()
 		{ "menu" }
 	)
 	check("menu antes de Copilot", { menu = true, copilot = true }, { "menu" })
-	check("snippet antes de Copilot sem menu", { broad_snippet = true, copilot = true }, { "snippet" })
+	check("Copilot antes de snippet ativo sem menu", { broad_snippet = true, copilot = true }, { "copilot" })
+	check("salto local sem sugestão Copilot", { local_snippet = true }, { "hide", "snippet" })
+	check("snippet ativo sem sugestão Copilot", { broad_snippet = true }, { "snippet" })
+	state, calls = { local_snippet = true, copilot = true }, {}
+	require("copilot.suggestion").dismiss()
+	calls = {}
+	handler(cmp)
+	assert(vim.deep_equal(calls, { "hide", "snippet" }))
+	cases = cases + 1
+	print("PASS salto local após rejeitar sugestão Copilot")
 	check("Copilot antes de navegação por delimitadores", { copilot = true }, { "copilot" })
 	check("fallback sem menu, snippet ou Copilot", {}, {})
+	for _, case in ipairs({
+		{ name = "Esc dispensa Copilot", flags = { copilot = true }, expected = { "dismiss" }, consumed = true },
+		{ name = "Esc sem sugestão segue fallback", flags = {}, expected = { "hide" } },
+		{ name = "Esc com menu e sem Copilot segue fallback", flags = { menu = true }, expected = { "hide" } },
+	}) do
+		state, calls = case.flags, {}
+		assert(escape_handler(cmp) == case.consumed)
+		assert(vim.deep_equal(calls, case.expected), case.name .. ": " .. vim.inspect(calls))
+		cases = cases + 1
+		print("PASS " .. case.name)
+	end
+	assert(config.keymap["<Esc>"][2] == "fallback")
+	assert(require("copilot.config").suggestion.keymap.dismiss == false)
 	assert(config.keymap["<S-Tab>"][1] == "snippet_backward")
 	assert(config.keymap["<S-Tab>"][2] == require("config.tabout").backward)
 	cases = cases + 1
@@ -74,6 +103,17 @@ local function run()
 	local early = vim.fn.maparg("<Tab>", "i", false, true).callback
 	assert(early)
 	package.loaded["blink.cmp"] = cmp
+	local early_escape = vim.fn.maparg("<Esc>", "i", false, true).callback
+	state, calls = { copilot = true }, {}
+	assert(early_escape() == "")
+	assert(vim.deep_equal(calls, { "dismiss" }))
+	cases = cases + 1
+	print("PASS Esc durante startup dispensa Copilot")
+	state, calls = {}, {}
+	assert(early_escape() == vim.api.nvim_replace_termcodes("<Esc>", true, true, true))
+	assert(vim.deep_equal(calls, { "hide" }))
+	cases = cases + 1
+	print("PASS Esc durante startup mantém saída do Insert")
 	require("config.tabout").forward = function()
 		return record("tabout")
 	end
@@ -83,11 +123,16 @@ local function run()
 	vim.snippet.jump = function()
 		record("native_snippet")
 	end
-	state, calls = { copilot = true }, {}
+	state, calls = { menu = true, local_snippet = true, native_snippet = true, copilot = true }, {}
+	early()
+	assert(vim.deep_equal(calls, { "menu" }))
+	cases = cases + 1
+	print("PASS fallback de startup mantém menu antes dos snippets e Copilot")
+	state, calls = { copilot = true, local_snippet = true, broad_snippet = true, native_snippet = true }, {}
 	early()
 	assert(vim.deep_equal(calls, { "copilot" }))
 	cases = cases + 1
-	print("PASS fallback de startup mantém Copilot antes de tabout")
+	print("PASS fallback de startup mantém Copilot antes dos snippets e tabout")
 	state, calls = { native_snippet = true }, {}
 	early()
 	assert(vim.deep_equal(calls, { "native_snippet" }))

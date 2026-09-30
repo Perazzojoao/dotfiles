@@ -8,12 +8,15 @@ O tabout é carregado por `lua/plugin/tabout.lua`, com `tabkey = ""`, `backwards
 
 | Tecla/contexto | Ordem das ações |
 | --- | --- |
-| Tab em Insert/Select | Salto local do LuaSnip → menu visível do Blink → snippet ativo → Copilot visível → tabout (somente Insert) → fallback original |
+| Tab em Insert/Select | Menu visível do Blink → Copilot visível → salto local do LuaSnip → snippet ativo → tabout (somente Insert) → fallback original |
 | Tab antes dos mappings locais do Blink | Mesma precedência anterior → snippet nativo do Neovim → tabout → Tab original |
+| Esc em Insert | Sugestão Copilot visível: dispensa e mantém Insert; sem sugestão: fecha o menu do Blink e sai do Insert |
 | Shift-Tab em Insert/Select | Snippet anterior → tabout para trás (somente Insert) → fallback original |
 | Tab / Shift-Tab em Normal | `:tabnext` / `:tabprev`, preservados |
 | Tab / Shift-Tab no cmdline (`:`, `/`, `?`) | Próxima/anterior sugestão do menu nativo, gerenciado pelo mini.cmdline |
 | Prompt, terminal, buffers especiais ou sem parser | O tabout não navega; os handlers anteriores permanecem responsáveis |
+
+Sem sugestão visível do Copilot, ou após rejeitá-la com `Esc`, Tab volta a tentar o salto do LuaSnip quando o menu do Blink estiver fechado.
 
 Use `:TaboutToggle` para alternar o tabout sem remover os mappings do Blink. O plugin também registra `:Tabout` e `:TaboutBack` (depreciados pelo upstream) e os quatro mappings `<Plug>(Tabout)`, `<Plug>(TaboutBack)`, `<Plug>(TaboutMulti)` e `<Plug>(TaboutBackMulti)`. [API e requisitos oficiais](https://github.com/abecodes/tabout.nvim#more-complex-keybindings).
 
@@ -95,12 +98,12 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | aerial.nvim | Normal <leader>v → :AerialToggle! |
 | alpha-nvim | Dashboard setup; no custom mappings. |
 | auto-save.nvim | No custom mappings. |
-| blink.cmp | Insert <Tab>: local LuaSnip jump → visible menu accept → snippet_forward → Copilot accept → fallback. Config also installs temporary global Insert <Tab> while Blink initializes. Default preset includes Insert <S-Tab> snippet_backward. Config disables <C-k>. |
+| blink.cmp | Insert <Tab>: visible menu accept → Copilot accept → local LuaSnip jump → snippet_forward → fallback. Config also installs temporary global Insert <Tab> while Blink initializes. Default preset includes Insert <S-Tab> snippet_backward. Insert <Esc> dismisses visible Copilot suggestions while retaining Insert; otherwise hides completion and exits Insert. Config disables <C-k>. |
 | bufferline.nvim | No custom mappings; bufferline display always enabled. |
 | catppuccin | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | Comment.nvim | No plugin default mappings retained by config; see configured mapping. |
 | conform.nvim | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
-| copilot.lua | Config Insert accept: <Tab> dispatched by Blink; accept_word <C-Right>; accept default disabled; Normal <leader>ca auth and <leader>ct toggle.<br>Config Normal <leader>ct toggles inline suggestions; <leader>ca authenticates. |
+| copilot.lua | Config Insert accept: <Tab> dispatched by Blink; accept_word <C-Right>; dismiss <Esc> dispatched by Blink/global fallback; plugin accept/dismiss defaults disabled; Normal <leader>ca auth and <leader>ct toggle.<br>Config Normal <leader>ct toggles inline suggestions; <leader>ca authenticates. |
 | CopilotChat.nvim | Plugin default chat-buffer Insert <Tab> (inactive because no setup); possible conflict if chat is configured. |
 | csvview.nvim | Normal <leader>mc toggles CSV rendering globally. |
 | fidget.nvim | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
@@ -171,4 +174,4 @@ Os pacotes CopilotChat, Catppuccin e hunk estão instalados sem configuração d
 
 [Inventário estruturado com evidências](neovim-plugins.json).
 
-Validação: 10 casos de precedência e 20 cenários com teclas reais passaram. O teste de Copilot usa o mecanismo real de exibição/aceitação com uma sugestão determinística, sem consultar o serviço remoto. O menu do Blink também usa um provedor determinístico. Os demais cenários usam os parsers e LuaSnip instalados. Isso cobre os conflitos de atalhos e os fluxos exercitados; não equivale a testar todas as funcionalidades de cada plugin.
+Validação: 20 casos de precedência e 27 cenários com teclas reais passaram. O teste de Copilot usa o mecanismo real de exibição/aceitação com uma sugestão determinística, sem consultar o serviço remoto. O menu do Blink também usa um provedor determinístico. Os demais cenários usam os parsers e LuaSnip instalados. Isso cobre os conflitos de atalhos e os fluxos exercitados; não equivale a testar todas as funcionalidades de cada plugin.

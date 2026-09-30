@@ -40,26 +40,32 @@ require("snippets.csharp")
 vim.g.copilot_inline_enabled = vim.g.copilot_inline_enabled ~= false
 
 local function handle_completion_tab(cmp)
-	-- LuaSnip's global jumpable state can outlive the snippet under the cursor.
-	if require("luasnip").locally_jumpable(1) then
-		cmp.hide()
-		local suggestion = require("copilot.suggestion")
-		if suggestion.is_visible() then
-			suggestion.dismiss()
-		end
-		return cmp.snippet_forward()
-	end
 	if cmp.is_menu_visible() then
 		return cmp.select_and_accept()
-	end
-	if cmp.snippet_active({ direction = 1 }) then
-		return cmp.snippet_forward()
 	end
 	local suggestion = require("copilot.suggestion")
 	if suggestion.is_visible() then
 		suggestion.accept()
 		return true
 	end
+	-- LuaSnip's global jumpable state can outlive the snippet under the cursor.
+	if require("luasnip").locally_jumpable(1) then
+		cmp.hide()
+		return cmp.snippet_forward()
+	end
+	if cmp.snippet_active({ direction = 1 }) then
+		return cmp.snippet_forward()
+	end
+end
+
+local function handle_completion_escape(cmp)
+	local suggestion = require("copilot.suggestion")
+	if suggestion.is_visible() then
+		suggestion.dismiss()
+		return true
+	end
+	-- Close completion without consuming the normal Insert-mode escape.
+	cmp.hide()
 end
 
 -- blink.cmp
@@ -78,7 +84,7 @@ require("blink.cmp").setup({
 		["<S-Tab>"] = { "snippet_backward", require("config.tabout").backward, "fallback" },
 		["<A-j>"] = { "select_next", "fallback" },
 		["<A-k>"] = { "select_prev", "fallback" },
-		["<Esc>"] = { "hide", "fallback" },
+		["<Esc>"] = { handle_completion_escape, "fallback" },
 	},
 	appearance = { nerd_font_variant = "mono" },
 	completion = {
@@ -115,7 +121,7 @@ require("copilot").setup({
 		enabled = true,
 		auto_trigger = true,
 		trigger_on_accept = false,
-		keymap = { accept = false, accept_word = "<C-Right>" },
+		keymap = { accept = false, accept_word = "<C-Right>", dismiss = false },
 	},
 	panel = { enabled = false },
 	filetypes = {
@@ -146,6 +152,13 @@ vim.keymap.set("i", "<Tab>", function()
 	end
 	return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
 end, { expr = true, replace_keycodes = false, desc = "Completion Tab fallback while Blink loads" })
+
+vim.keymap.set("i", "<Esc>", function()
+	if handle_completion_escape(require("blink.cmp")) then
+		return ""
+	end
+	return vim.api.nvim_replace_termcodes("<Esc>", true, true, true)
+end, { expr = true, replace_keycodes = false, desc = "Dismiss Copilot suggestion or leave Insert mode" })
 
 vim.api.nvim_create_autocmd("User", {
 	pattern = { "BlinkCmpMenuOpen", "BlinkCmpMenuClose" },
