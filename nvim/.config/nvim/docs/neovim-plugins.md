@@ -169,6 +169,8 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 
 `CopilotToggle`, `Templates`, `NotebookHealth`, `NewNotebook`, `PackAdd`, `PackDel` e `PackUpdate` continuam disponíveis. O suporte nativo de LSP e os atalhos de diagnóstico/formatação permanecem em `lua/plugin/lsp.lua`.
 
+`<leader>w` salva e fecha o buffer atual; `<leader>q` fecha apenas se não houver alterações não salvas. Ambos preservam as janelas e a lateral do explorer do Snacks enquanto houver outros buffers de edição listados, inclusive descarregados. Ao fechar o último, encerram a sessão com `qall`, sem criar um buffer vazio. Alterações não salvas continuam impedindo a saída.
+
 ## Reprodução da captura e dos testes
 
 ```sh
@@ -177,6 +179,7 @@ NVIM_LOG_FILE=/tmp/nvim-tabout-tests.log nvim --headless -n -i NONE -c 'luafile 
 python3 tests/tabout_tui.py
 python3 tests/signature_tui.py
 python3 tests/insert_editing_tui.py
+python3 tests/buffer_closing.py
 NVIM_LOG_FILE=/tmp/nvim-template-command-tests.log nvim --headless -n -u NONE -i NONE -l tests/templates_command.lua
 ```
 
