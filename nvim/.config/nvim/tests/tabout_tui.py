@@ -54,7 +54,11 @@ def until(callback, timeout=10):
     raise RuntimeError('Timed out waiting for UI state')
 
 def prepare(line, column, filetype='typescript'):
-    os.write(master,b'\x1b')
+    # Stop through RPC so an already-Normal buffer cannot leave a queued Esc
+    # that exits Insert after the next preparation has finished.
+    mode=rpc('require("copilot.suggestion").dismiss(); require("blink.cmp").hide(); vim.cmd("stopinsert"); return vim.api.nvim_get_mode().mode')
+    if mode in ('s','S','\x13','v','V','\x16'):
+        os.write(master,b'\x1b')
     until(lambda: rpc('return vim.api.nvim_get_mode().mode')=='n')
     code='local ls=require("luasnip"); pcall(ls.unlink_current); require("blink.cmp").hide(); require("copilot.suggestion").dismiss(); local b=vim.api.nvim_create_buf(true,false); vim.api.nvim_set_current_buf(b); vim.api.nvim_buf_set_lines(b,0,-1,false,{'+json.dumps(line)+'}); vim.bo[b].filetype='+json.dumps(filetype)+'; vim.b[b].copilot_suggestion_auto_trigger=false; vim.api.nvim_win_set_cursor(0,{1,'+str(column)+'}); vim.cmd('+json.dumps('startinsert!' if column>=len(line) else 'startinsert')+'); return b'
     rpc(code)
@@ -92,8 +96,24 @@ try:
         press_and_expect(b'\t',line,end,'Tab '+ft+' '+line)
     prepare('fn("value")',10)
     press_and_expect(b'\x1b[Z','fn("value")',3,'Shift-Tab backwards out of string')
+    prepare('fn()',3)
+    press_and_expect(b'\tX','fn()X',5,'queued Tab then text preserves forward navigation')
+    prepare('fn("value")',10)
+    press_and_expect(b'\x1b[ZX','fn(X"value")',4,'queued Shift-Tab then text preserves backward navigation')
+    prepare('fn("value")',5)
+    press_and_expect(b'\t\tX','fn("value")X',12,'queued Tabs navigate in order before text')
+    prepare('fn()',3)
+    rpc('vim.keymap.del("i", "<Tab>", {buffer=0}); return true')
+    press_and_expect(b'\tX','fn()X',5,'global fallback preserves queued Tab then text')
     prepare('',0)
     press_and_expect(b'\t','  ',2,'native indentation preserved')
+    prepare('plain',5)
+    os.write(master,b'\x0a')
+    until(lambda: rpc('return vim.api.nvim_buf_get_lines(0,0,-1,false)')==['plain',''])
+    assert not rpc('return require("blink.cmp").is_menu_visible()')
+    print('PASS Ctrl-J with closed menu preserves native newline')
+    prepare('',0,'tabout_missing_parser')
+    press_and_expect(b'\x0ba:','ä',2,'Ctrl-K with closed menu and no LSP preserves native digraph')
     prepare('plain',5,'tabout_missing_parser')
     press_and_expect(b'\t','plain ',6,'missing parser preserves Tab')
     prepare('fn()',3)
@@ -102,6 +122,14 @@ try:
     rpc('vim.cmd("TaboutToggle"); return true')
     prepare('fn()',3)
     press_and_expect(b'\t','fn()',4,'re-enabled tabout navigates again')
+    prepare_insert_snippet()
+    rpc('vim.api.nvim_buf_set_lines(0,-1,-1,false,{"fn()"}); vim.api.nvim_win_set_cursor(0,{2,3}); assert(not require("luasnip").locally_jumpable(1) and require("luasnip").jumpable(1)); return true')
+    press_and_expect(b'\t','fn()',4,'stale LuaSnip state outside snippet yields to tabout')
+    assert rpc('return vim.api.nvim_win_get_cursor(0)[1]')==2
+    prepare_insert_snippet()
+    rpc('vim.api.nvim_buf_set_lines(0,-1,-1,false,{"plain"}); vim.api.nvim_win_set_cursor(0,{2,5}); assert(not require("luasnip").locally_jumpable(1) and require("luasnip").jumpable(1)); return true')
+    press_and_expect(b'\t','plain ',6,'stale LuaSnip state outside snippet preserves native Tab')
+    assert rpc('return vim.api.nvim_win_get_cursor(0)[1]')==2
     prepare('',0)
     rpc('local ls=require("luasnip"); ls.snip_expand(ls.parser.parse_snippet("audit", "fn(${1:first}, ${2:second})$0")); return true')
     until(lambda: rpc('return require("luasnip").locally_jumpable(1)'))
@@ -135,8 +163,17 @@ try:
     until(lambda: rpc('return vim.api.nvim_get_mode().mode')=='n')
     print('PASS Esc without Copilot exits Insert mode')
     prepare('fn(d)',4)
-    rpc('package.loaded["audit_source"]={new=function()return {get_completions=function(_,context,callback)callback({items={{label="done",insertText="done",kind=6}},is_incomplete_forward=false,is_incomplete_backward=false})end}end}; local spec={name="Audit",module="audit_source"};require("blink.cmp.config").sources.providers.audit=spec;require("blink.cmp.sources.lib").providers.audit=require("blink.cmp.sources.lib.provider").new("audit",spec);require("blink.cmp").show({providers={"audit"}});return true')
+    rpc('package.loaded["audit_source"]={new=function()return {get_completions=function(_,context,callback)callback({items={{label="done",insertText="done",kind=6},{label="done_other",insertText="done_other",kind=6}},is_incomplete_forward=false,is_incomplete_backward=false})end}end}; local spec={name="Audit",module="audit_source"};require("blink.cmp.config").sources.providers.audit=spec;require("blink.cmp.sources.lib").providers.audit=require("blink.cmp.sources.lib.provider").new("audit",spec);require("blink.cmp").show({providers={"audit"}});return true')
     until(lambda: rpc('return require("blink.cmp").is_menu_visible()'))
+    until(lambda: rpc('return require("blink.cmp").get_selected_item_idx()')==1)
+    for key,index,label in [(b'\x0a',2,'Ctrl-J selects next Blink item'),(b'\x0b',1,'Ctrl-K selects previous Blink item'),(b'\x1bj',2,'Alt-J still selects next Blink item')]:
+        os.write(master,key)
+        until(lambda: rpc('return require("blink.cmp").get_selected_item_idx()')==index)
+        assert rpc('return require("blink.cmp").is_menu_visible()')
+        assert rpc('return vim.api.nvim_get_current_line()')=='fn(d)'
+        print('PASS',label)
+    os.write(master,b'\x0b')
+    until(lambda: rpc('return require("blink.cmp").get_selected_item_idx()')==1)
     os.write(master,b'\t')
     until(lambda: rpc('return vim.api.nvim_get_current_line()')=='fn(done)')
     print('PASS real Blink menu acceptance wins over tabout')

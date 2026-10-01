@@ -31,20 +31,9 @@ local function jump(direction)
 	if not ok or not row or vim.deep_equal(before, { row + 1, col }) then
 		return false
 	end
-	-- Expression mappings restore the cursor; run the plugin after evaluation.
-	local buffer, window = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
-	vim.schedule(function()
-		if
-			vim.api.nvim_get_current_buf() ~= buffer
-			or vim.api.nvim_get_current_win() ~= window
-			or not vim.deep_equal(before, vim.api.nvim_win_get_cursor(0))
-		then
-			return
-		end
-		local action = direction == "forward" and tabout.tabout or tabout.taboutBack
-		action()
-	end)
-	return true
+	-- Execute outside expression evaluation, before the next queued input key.
+	local mapping = direction == "forward" and "<Plug>(Tabout)" or "<Plug>(TaboutBack)"
+	return vim.api.nvim_replace_termcodes(mapping, true, true, true)
 end
 
 function M.forward()

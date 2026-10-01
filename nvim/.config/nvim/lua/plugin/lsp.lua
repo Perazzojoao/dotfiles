@@ -217,17 +217,15 @@ local function show_insert_signature(bufnr, silent)
 end
 
 local function toggle_insert_signature(bufnr)
-	local blink = require("blink.cmp")
-	if blink.is_menu_visible() then
-		signature_hidden_by_user[bufnr] = nil
-		blink.hide()
-		return
-	end
 	if insert_signature_win(bufnr) then
 		signature_hidden_by_user[bufnr] = true
 		close_insert_signature(bufnr)
 	else
 		signature_hidden_by_user[bufnr] = nil
+		local blink = require("blink.cmp")
+		if blink.is_menu_visible() then
+			blink.hide()
+		end
 		show_insert_signature(bufnr, false)
 	end
 end
@@ -310,7 +308,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		if
 			client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_signatureHelp, event.buf)
 		then
-			map("<C-k>", function()
+			map("<A-k>", function()
 				toggle_insert_signature(event.buf)
 			end, "Toggle function signature", "i")
 

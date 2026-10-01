@@ -2,15 +2,20 @@
 
 Inventário da configuração ativa em 2026-09-29: **60 plugins instalados**, com fontes conferidas no lock e nos diretórios locais. A captura da configuração completa encontrou **183 comandos globais de usuário**; antes do tabout eram 180. Comandos de buffers também foram examinados em C#, Java, TypeScript, TSX, HTML, Markdown e Lua.
 
+Atualização de 2026-09-30: o comando nativo `:Template` foi removido para impedir sobrescrita; use `:Templates` ou `<leader>st`. O JSON complementar preserva a captura histórica anterior a essa remoção. Os achados ainda pendentes estão em [pendencias-code-review.md](pendencias-code-review.md).
+
 ## Tab e Shift-Tab
 
 O tabout é carregado por `lua/plugin/tabout.lua`, com `tabkey = ""`, `backwards_tabkey = ""`, `completion = false` e os dois fallbacks de indentação próprios desativados. O Blink mantém a propriedade dos atalhos; `lua/config/tabout.lua` só tenta navegar em modo de inserção, buffers comuns e com parser disponível.
 
 | Tecla/contexto | Ordem das ações |
 | --- | --- |
-| Tab em Insert/Select | Menu visível do Blink → Copilot visível → salto local do LuaSnip → snippet ativo → tabout (somente Insert) → fallback original |
+| Tab em Insert/Select | Menu visível do Blink → Copilot visível → salto local do LuaSnip → tabout (somente Insert) → fallback original |
 | Tab antes dos mappings locais do Blink | Mesma precedência anterior → snippet nativo do Neovim → tabout → Tab original |
 | Esc em Insert | Sugestão Copilot visível: dispensa e mantém Insert; sem sugestão: fecha o menu do Blink e sai do Insert |
+| Ctrl-j / Ctrl-k em Insert | Com menu do Blink aberto: próximo/anterior item; com menu fechado: comportamento nativo ou mapping anterior |
+| Alt-k em Insert com LSP compatível | Abre/fecha a assinatura de função; ao abrir, fecha o menu do Blink se necessário |
+| Ctrl-Backspace / Ctrl-Delete em Insert | Apaga a palavra para trás/para frente a partir do cursor; Ctrl-Delete no fim da linha mantém o texto anterior |
 | Shift-Tab em Insert/Select | Snippet anterior → tabout para trás (somente Insert) → fallback original |
 | Tab / Shift-Tab em Normal | `:tabnext` / `:tabprev`, preservados |
 | Tab / Shift-Tab no cmdline (`:`, `/`, `?`) | Próxima/anterior sugestão do menu nativo, gerenciado pelo mini.cmdline |
@@ -18,9 +23,13 @@ O tabout é carregado por `lua/plugin/tabout.lua`, com `tabkey = ""`, `backwards
 
 Sem sugestão visível do Copilot, ou após rejeitá-la com `Esc`, Tab volta a tentar o salto do LuaSnip quando o menu do Blink estiver fechado.
 
+Alt-k alterna a assinatura do LSP conforme o estado da própria janela. Funciona com o menu de completion do Blink aberto ou fechado, mantém Insert e respeita o fechamento manual até a próxima abertura solicitada. O Blink não instala mapping para Alt-k; Ctrl-k continua selecionando o item anterior de completion.
+
+Ctrl-Backspace apaga até o limite da palavra anterior; no início da linha não faz alterações e, na indentação, remove os espaços anteriores sem juntar linhas. Ctrl-Delete apaga para frente e não faz alterações no fim da linha. Backspace/Delete sem Ctrl mantêm a exclusão de um caractere. A suíte `tests/insert_editing_tui.py` passou 19 casos em terminal real, incluindo palavras parciais, espaços, pontuação, UTF-8 e limites de linha.
+
 Use `:TaboutToggle` para alternar o tabout sem remover os mappings do Blink. O plugin também registra `:Tabout` e `:TaboutBack` (depreciados pelo upstream) e os quatro mappings `<Plug>(Tabout)`, `<Plug>(TaboutBack)`, `<Plug>(TaboutMulti)` e `<Plug>(TaboutBackMulti)`. [API e requisitos oficiais](https://github.com/abecodes/tabout.nvim#more-complex-keybindings).
 
-O adaptador consulta o alvo pelo Tree-sitter e agenda o salto: mappings de expressão do Neovim restauram o cursor ao terminar a avaliação. A execução também verifica que o buffer, a janela e o cursor continuam os mesmos.
+O adaptador consulta o alvo pelo Tree-sitter e retorna o mapping `<Plug>(Tabout)` ou `<Plug>(TaboutBack)`. O salto executa fora da avaliação da expressão e antes da próxima tecla enfileirada, preservando a ordem de navegação e digitação. O estado global de um snippet antigo do LuaSnip não autoriza saltos fora da região local.
 
 A linha de comando usa a interface nativa `ui2` e a conclusão automática do `mini.cmdline`. O Blink tem `cmdline.enabled = false` para evitar capturar as teclas de navegação de um menu nativo aberto. No cmdline, Tab/Shift-Tab e Ctrl-n/Ctrl-p percorrem sugestões. Com o menu aberto, ↑/↓ e Alt+k/j também percorrem sugestões; com o menu fechado, as setas verticais navegam pelo histórico. As setas horizontais editam o texto. A autocorreção do mini.cmdline fica desativada com `autocorrect.enable = false`. A regressão é coberta por `python3 tests/cmdline_tui.py`, incluindo comandos, buscas com `/` e `?` e o caso `/comm` em um arquivo Lua real.
 
@@ -82,7 +91,7 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | [snacks.nvim](https://github.com/folke/snacks.nvim) | picker, explorer, terminal, zen e utilitários; configurado | [lua/plugin/01-snack.lua](../lua/plugin/01-snack.lua) | Sem comando próprio |
 | [suda.vim](https://github.com/lambdalisue/suda.vim) | leitura/gravação de arquivos com privilégios elevados; configurado | [lua/plugin/editor.lua](../lua/plugin/editor.lua) | :SudaRead [file] / :SudaWrite [file] (plugin load) |
 | [tabout.nvim](https://github.com/abecodes/tabout.nvim) | salto além de delimitadores; instalado sem setup; configurado | [lua/plugin/tabout.lua](../lua/plugin/tabout.lua) | :Tabout / :TaboutBack (deprecated); :TaboutToggle (registrado apenas após setup) |
-| [template.nvim](https://github.com/nvimdev/template.nvim) | templates de arquivo; configurado | [lua/plugin/templates.lua](../lua/plugin/templates.lua) | :Template [path] (plugin command after load)<br>Config: :Templates [lang\|all] (lua/plugin/templates.lua) |
+| [template.nvim](https://github.com/nvimdev/template.nvim) | templates de arquivo; configurado | [lua/plugin/templates.lua](../lua/plugin/templates.lua) | :Templates [lang\|all] / <leader>st (fluxo seguro da configuração); :Template nativo removido para evitar sobrescrita |
 | [todo-comments.nvim](https://github.com/folke/todo-comments.nvim) | realce/navegação de TODO/FIXME; configurado | [lua/plugin/editor.lua](../lua/plugin/editor.lua) | :TodoQuickFix / :TodoLocList / :TodoTrouble / :TodoTelescope / :TodoFzfLua (dependem integração correspondente) |
 | [tokyonight.nvim](https://github.com/folke/tokyonight.nvim) | colorscheme ativo Tokyo Night; configurado | [lua/plugin/00-colorscheme.lua](../lua/plugin/00-colorscheme.lua) | Sem comando próprio |
 | [trouble.nvim](https://github.com/folke/trouble.nvim) | painel de diagnósticos e símbolos; configurado | [lua/plugin/ui.lua](../lua/plugin/ui.lua) | :Trouble {mode} {action} [opts] (após setup/plugin load) |
@@ -98,7 +107,7 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | aerial.nvim | Normal <leader>v → :AerialToggle! |
 | alpha-nvim | Dashboard setup; no custom mappings. |
 | auto-save.nvim | No custom mappings. |
-| blink.cmp | Insert <Tab>: visible menu accept → Copilot accept → local LuaSnip jump → snippet_forward → fallback. Config also installs temporary global Insert <Tab> while Blink initializes. Default preset includes Insert <S-Tab> snippet_backward. Insert <Esc> dismisses visible Copilot suggestions while retaining Insert; otherwise hides completion and exits Insert. Config disables <C-k>. |
+| blink.cmp | Insert <Tab>: visible menu accept → Copilot accept → local LuaSnip jump → tabout → fallback. Config also installs global Insert <Tab> for startup and Blink fallback. Default preset includes Insert <S-Tab> snippet_backward. Insert <Esc> dismisses visible Copilot suggestions while retaining Insert; otherwise hides completion and exits Insert. Insert <C-j>/<C-k> select next/previous item only while the Blink menu is visible; otherwise use the prior mapping/native behavior. |
 | bufferline.nvim | No custom mappings; bufferline display always enabled. |
 | catppuccin | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | Comment.nvim | No plugin default mappings retained by config; see configured mapping. |
@@ -132,7 +141,7 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | nvim-highlight-colors | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | nvim-hlslens | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | nvim-lint | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
-| nvim-lspconfig | LSP buffer-local grn/gra/H/gK/grr/gri/grd/grD/gO/gW/grt; Insert <C-k> native signature; global <leader>= format. |
+| nvim-lspconfig | LSP buffer-local grn/gra/H/gK/grr/gri/grd/grD/gO/gW/grt; Insert <A-k> toggles native signature help, closing the Blink menu when open; Insert <C-k> navigates to the previous Blink item; global <leader>= format. |
 | nvim-scrollbar | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | nvim-treesitter | No custom mapping; parser install and FileType setup. |
 | nvim-treesitter-context | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
@@ -164,8 +173,11 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 
 ```sh
 NVIM_LOG_FILE=/tmp/nvim-plugin-audit.log nvim --headless -i NONE --cmd "luafile scripts/plugin_audit.lua" -c 'lua vim.defer_fn(function() PluginAudit.write("/tmp/neovim-plugins.json"); vim.cmd("qa!") end,300)'
-NVIM_LOG_FILE=/tmp/nvim-tabout-tests.log nvim --headless -i NONE -c 'luafile tests/tabout.lua'
+NVIM_LOG_FILE=/tmp/nvim-tabout-tests.log nvim --headless -n -i NONE -c 'luafile tests/tabout.lua'
 python3 tests/tabout_tui.py
+python3 tests/signature_tui.py
+python3 tests/insert_editing_tui.py
+NVIM_LOG_FILE=/tmp/nvim-template-command-tests.log nvim --headless -n -u NONE -i NONE -l tests/templates_command.lua
 ```
 
 A comparação antes/depois preservou todos os 180 comandos existentes e os mappings globais anteriores. Acrescentou apenas os três comandos e os quatro `<Plug>` do tabout. Nos sete filetypes capturados, as diferenças locais ficaram em Tab/Shift-Tab do Blink, nos modos Insert e Select.
@@ -174,4 +186,4 @@ Os pacotes CopilotChat, Catppuccin e hunk estão instalados sem configuração d
 
 [Inventário estruturado com evidências](neovim-plugins.json).
 
-Validação: 20 casos de precedência e 27 cenários com teclas reais passaram. O teste de Copilot usa o mecanismo real de exibição/aceitação com uma sugestão determinística, sem consultar o serviço remoto. O menu do Blink também usa um provedor determinístico. Os demais cenários usam os parsers e LuaSnip instalados. Isso cobre os conflitos de atalhos e os fluxos exercitados; não equivale a testar todas as funcionalidades de cada plugin.
+Validação de Tab e navegação em 2026-09-30: 21 casos de precedência e 38 cenários com teclas reais passaram, incluindo snippets antigos fora da região local, Tab/Shift-Tab seguidos de texto na mesma fila e Ctrl-j/Ctrl-k com o menu aberto/fechado. O teste de Copilot usa o mecanismo real de exibição/aceitação com uma sugestão determinística, sem consultar o serviço remoto. O menu do Blink também usa um provedor determinístico. Os demais cenários usam os parsers e LuaSnip instalados. Isso cobre os conflitos de atalhos e os fluxos exercitados; não equivale a testar todas as funcionalidades de cada plugin.

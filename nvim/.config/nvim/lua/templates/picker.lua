@@ -27,6 +27,54 @@ local function create(item, value, context)
 	end
 end
 
+local function select_directory(item, context)
+	return Snacks.picker({
+		title = "Pastas do projeto · " .. context.cwd,
+		cwd = context.cwd,
+		format = "text",
+		layout = { preset = "select" },
+		finder = function()
+			return function(add)
+				add({ text = ". (raiz)", directory = context.cwd })
+				for path, kind in vim.fs.dir(context.cwd, {
+					depth = math.huge,
+					skip = function(path)
+						return vim.fs.basename(path) ~= ".git"
+					end,
+				}) do
+					if kind == "directory" and vim.fs.basename(path) ~= ".git" then
+						add({ text = path .. "/", directory = vim.fs.joinpath(context.cwd, path) })
+					end
+				end
+			end
+		end,
+		confirm = function(picker, directory)
+			if not directory then
+				return
+			end
+			picker:close()
+			vim.schedule(function()
+				Snacks.input({
+					prompt = "Arquivo em " .. directory.text .. " (" .. item.extension .. "): ",
+					completion = "file",
+					win = {
+						on_win = function(window)
+							vim.api.nvim_win_call(window.win, function()
+								vim.cmd.lcd({ args = { directory.directory } })
+							end)
+						end,
+					},
+				}, function(value)
+					if value and vim.trim(value) ~= "" then
+						local path = require("templates.files").path(value, directory.directory)
+						create(item, value:match("/$") and path .. "/" or path, context)
+					end
+				end)
+			end)
+		end,
+	})
+end
+
 function M.open(context, all, pattern)
 	local language = not all and context.language or nil
 	local title = "Templates · " .. (language or "todas") .. " · Alt-A: alternar linguagens"
@@ -57,12 +105,7 @@ function M.open(context, all, pattern)
 			end
 			picker:close()
 			vim.schedule(function()
-				Snacks.input(
-					{ prompt = "Caminho do arquivo (" .. item.extension .. "): ", completion = "file" },
-					function(value)
-						create(item, value, context)
-					end
-				)
+				select_directory(item, context)
 			end)
 		end,
 	})
@@ -73,8 +116,15 @@ function M.start(argument)
 		notify("Linguagem desconhecida: " .. argument)
 		return
 	end
+	local cwd = vim.fn.getcwd()
+	local filename = vim.bo.buftype == "" and vim.api.nvim_buf_get_name(0) or ""
+	local root = vim.fs.root(filename ~= "" and filename or cwd, function(name)
+		return vim.tbl_contains({ ".git", "package.json", "go.mod", "pom.xml", "build.gradle", "build.gradle.kts" }, name)
+			or name:match("%.csproj$") ~= nil
+			or name:match("%.slnx?$") ~= nil
+	end)
 	local context = {
-		cwd = vim.fn.getcwd(),
+		cwd = root or cwd,
 		window = vim.api.nvim_get_current_win(),
 		language = argument ~= "all" and argument or languages.for_filetype(vim.bo.filetype),
 	}

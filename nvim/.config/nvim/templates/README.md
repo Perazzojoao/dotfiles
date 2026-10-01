@@ -9,24 +9,37 @@ Também é possível executar `:Templates`, `:Templates all` ou
 Uma linguagem sem modelos mostra uma lista vazia. Inicialmente estão disponíveis
 `csharp/class`, `csharp/interface` e `csharp/enum`.
 
-Selecione um modelo, informe o caminho completo do novo arquivo e confirme.
-Caminhos relativos usam a pasta de trabalho capturada ao abrir o finder;
-caminhos absolutos também são aceitos. As subpastas são verificadas e criadas
+Selecione um modelo, escolha a pasta de destino em um segundo finder do Snacks,
+informe o caminho do novo arquivo e confirme. A opção `. (raiz)` cria o arquivo
+na raiz do projeto. As outras opções mostram as pastas existentes com seus
+caminhos relativos à raiz, incluindo pastas vazias e ocultas; `.git` é excluída.
+
+A raiz é detectada a partir do arquivo atual (ou da pasta de trabalho em um
+buffer sem arquivo), usando o ancestral mais próximo com `.git`, `.csproj`,
+`.sln`, `.slnx`, `package.json`, `go.mod`, `pom.xml` ou `build.gradle[.kts]`.
+Sem um desses marcadores, usa-se a pasta de trabalho capturada ao abrir o finder.
+
+Caminhos relativos usam a pasta selecionada; caminhos absolutos também são
+aceitos. A conclusão de nomes no input usa a pasta selecionada sem alterar a
+pasta de trabalho da janela original. As subpastas são verificadas e criadas
 automaticamente antes da renderização do template. Se a geração falhar, as
 pastas criadas nessa operação são removidas quando ainda estiverem vazias.
 A extensão é acrescentada quando omitida; uma extensão incompatível é recusada.
-Por exemplo, escolher `csharp/class` e informar `Entities/Cliente` cria
-`Entities/Cliente.cs` e posiciona o cursor dentro da classe em modo de inserção.
+Por exemplo, escolher `csharp/class`, selecionar `. (raiz)` e informar
+`Entities/TestEntity` cria `<raiz>/Entities/TestEntity.cs`. Selecionando `src/`,
+o mesmo nome cria `<raiz>/src/Entities/TestEntity.cs`. O cursor é posicionado
+dentro da classe em modo de inserção.
 
 Arquivos existentes, links e destinos já abertos em buffers são recusados,
-inclusive buffers ainda não salvos. Cancelar a seleção, o caminho ou a escolha da
-raiz não cria arquivos. O conteúdo inicial é gravado antes da abertura do buffer;
+inclusive buffers ainda não salvos. Cancelar o template, a pasta, o caminho ou a
+escolha da raiz não cria arquivos. O conteúdo inicial é gravado antes da abertura do buffer;
 edições posteriores usam a configuração de salvamento já existente.
 
 ## Namespace C#
 
 A raiz é a pasta do `.csproj` ancestral mais próximo do destino. Se não houver
-`.csproj`, usa-se a pasta de trabalho quando ela contém o destino. Para destinos
+`.csproj`, usa-se a raiz detectada ao abrir o finder quando ela contém o destino.
+A pasta escolhida para o arquivo não substitui essa raiz no namespace. Para destinos
 externos sem projeto, um segundo input solicita uma pasta raiz existente que
 contenha o arquivo.
 
@@ -74,11 +87,12 @@ revisão, valide o adaptador e os testes abaixo.
 Na raiz desta configuração, após instalar os plugins:
 
 ```sh
-NVIM_LOG_FILE=/tmp/nvim-template-tests.log nvim --headless -u NONE -i NONE -c 'luafile tests/templates.lua'
-XDG_DATA_HOME=/tmp/nvim-template-picker-data NVIM_LOG_FILE=/tmp/nvim-template-picker-tests.log nvim --headless -u NONE -i NONE -c 'luafile tests/templates_picker.lua'
+NVIM_LOG_FILE=/tmp/nvim-template-tests.log nvim --headless -n -u NONE -i NONE -c 'luafile tests/templates.lua'
+XDG_DATA_HOME=/tmp/nvim-template-picker-data NVIM_LOG_FILE=/tmp/nvim-template-picker-tests.log nvim --headless -n -u NONE -i NONE -c 'luafile tests/templates_picker.lua'
 ```
 
 O primeiro comando valida criação, namespace, isolamento e preservação de
 arquivos/buffers. Com `TEMPLATES_TEST_DOTNET=1`, também compila os três modelos
 gerados usando o SDK .NET instalado. O segundo usa o picker real do Snacks e
-callbacks agendados para verificar filtros, alternância, confirmação e inputs.
+callbacks agendados para verificar filtros, alternância, seleção da pasta,
+criação na raiz ou em subpastas, cancelamentos, confirmação e inputs.

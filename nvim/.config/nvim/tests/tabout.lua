@@ -73,7 +73,7 @@ local function run()
 	check("menu antes de Copilot", { menu = true, copilot = true }, { "menu" })
 	check("Copilot antes de snippet ativo sem menu", { broad_snippet = true, copilot = true }, { "copilot" })
 	check("salto local sem sugestão Copilot", { local_snippet = true }, { "hide", "snippet" })
-	check("snippet ativo sem sugestão Copilot", { broad_snippet = true }, { "snippet" })
+	check("estado antigo de snippet fora da região local mantém fallback", { broad_snippet = true }, {})
 	state, calls = { local_snippet = true, copilot = true }, {}
 	require("copilot.suggestion").dismiss()
 	calls = {}
@@ -114,8 +114,10 @@ local function run()
 	assert(vim.deep_equal(calls, { "hide" }))
 	cases = cases + 1
 	print("PASS Esc durante startup mantém saída do Insert")
+	local tabout_keys = vim.api.nvim_replace_termcodes("<Plug>(Tabout)", true, true, true)
 	require("config.tabout").forward = function()
-		return record("tabout")
+		record("tabout")
+		return tabout_keys
 	end
 	vim.snippet.active = function()
 		return state.native_snippet
@@ -139,10 +141,15 @@ local function run()
 	cases = cases + 1
 	print("PASS fallback de startup mantém snippet nativo")
 	state, calls = {}, {}
-	early()
+	assert(early() == tabout_keys)
 	assert(vim.deep_equal(calls, { "tabout" }))
 	cases = cases + 1
-	print("PASS fallback de startup alcança tabout")
+	print("PASS fallback de startup retorna ação ordenada do tabout")
+	state, calls = { broad_snippet = true }, {}
+	assert(early() == tabout_keys)
+	assert(vim.deep_equal(calls, { "tabout" }))
+	cases = cases + 1
+	print("PASS fallback de startup ignora snippet antigo fora da região local")
 end
 local ok, err = xpcall(run, debug.traceback)
 package.loaded["luasnip"] = original_snippets

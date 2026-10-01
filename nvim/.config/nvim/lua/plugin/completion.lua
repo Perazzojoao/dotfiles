@@ -53,9 +53,6 @@ local function handle_completion_tab(cmp)
 		cmp.hide()
 		return cmp.snippet_forward()
 	end
-	if cmp.snippet_active({ direction = 1 }) then
-		return cmp.snippet_forward()
-	end
 end
 
 local function handle_completion_escape(cmp)
@@ -74,7 +71,22 @@ end
 require("blink.cmp").setup({
 	keymap = {
 		preset = "default",
-		["<C-k>"] = false, -- Signature help is handled by the native LSP popup.
+		["<C-j>"] = {
+			function(cmp)
+				if vim.api.nvim_get_mode().mode:sub(1, 1) == "i" and cmp.is_menu_visible() then
+					return cmp.select_next()
+				end
+			end,
+			"fallback",
+		},
+		["<C-k>"] = {
+			function(cmp)
+				if vim.api.nvim_get_mode().mode:sub(1, 1) == "i" and cmp.is_menu_visible() then
+					return cmp.select_prev()
+				end
+			end,
+			"fallback",
+		},
 		["<Tab>"] = {
 			handle_completion_tab,
 			"select_and_accept",
@@ -83,7 +95,7 @@ require("blink.cmp").setup({
 		},
 		["<S-Tab>"] = { "snippet_backward", require("config.tabout").backward, "fallback" },
 		["<A-j>"] = { "select_next", "fallback" },
-		["<A-k>"] = { "select_prev", "fallback" },
+		["<A-k>"] = false, -- Reserve Alt-k for native LSP signature help.
 		["<Esc>"] = { handle_completion_escape, "fallback" },
 	},
 	appearance = { nerd_font_variant = "mono" },
@@ -147,8 +159,9 @@ vim.keymap.set("i", "<Tab>", function()
 		vim.snippet.jump(1)
 		return ""
 	end
-	if require("config.tabout").forward() then
-		return ""
+	local tabout = require("config.tabout").forward()
+	if tabout then
+		return tabout
 	end
 	return vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
 end, { expr = true, replace_keycodes = false, desc = "Completion Tab fallback while Blink loads" })

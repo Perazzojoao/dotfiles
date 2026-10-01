@@ -304,7 +304,29 @@ keymap("i", "<A-l>", "<Right>", { noremap = true, silent = true })
 -- Deleting
 keymap("i", "<C-h>", "<Backspace>", { noremap = true, silent = true })
 keymap("i", "<C-l>", "<Delete>", { noremap = true, silent = true })
-keymap("i", "<C-Delete>", "<C-o>dw", { noremap = true, silent = true })
+keymap("i", "<C-BS>", function()
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local prefix = vim.api.nvim_get_current_line():sub(1, cursor[2])
+
+	if cursor[2] == 0 then
+		return ""
+	end
+	if prefix:match("^%s*$") then
+		return "<C-u>"
+	end
+
+	return "<C-w>"
+end, { desc = "Delete word backward", expr = true, noremap = true, replace_keycodes = true, silent = true })
+keymap("i", "<C-Delete>", function()
+	local cursor = vim.api.nvim_win_get_cursor(0)
+	local line = vim.api.nvim_get_current_line()
+
+	if cursor[2] >= #line then
+		return ""
+	end
+
+	return "<C-o>dw"
+end, { desc = "Delete word forward", expr = true, noremap = true, replace_keycodes = true, silent = true })
 
 -- General --
 -- Custom commands
