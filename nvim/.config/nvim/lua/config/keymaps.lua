@@ -60,24 +60,7 @@ local function save_buffer(bufnr)
 end
 
 local function close_current_buffer(force)
-	local current = vim.api.nvim_get_current_buf()
-	local remaining = vim.tbl_filter(function(buffer)
-		return buffer.bufnr ~= current and vim.bo[buffer.bufnr].buftype == ""
-	end, vim.fn.getbufinfo({ buflisted = 1 }))
-
-	-- Quit the session, including explorer windows, when the last editing buffer closes.
-	if #remaining == 0 then
-		vim.cmd(force and "qall!" or "qall")
-		return
-	end
-
-	-- Preserve :bdelete's refusal to discard changes; Snacks otherwise prompts to save.
-	if vim.bo[current].modified and not force then
-		vim.notify("Buffer possui alterações não salvas. Use <leader>w para salvar ou <leader>kf para descartar.", vim.log.levels.ERROR)
-		return
-	end
-
-	require("snacks").bufdelete({ buf = current, force = force })
+	require("config.buffers").close(nil, force)
 end
 
 local function save_and_close_current_buffer()

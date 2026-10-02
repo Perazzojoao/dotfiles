@@ -43,7 +43,7 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | [alpha-nvim](https://github.com/goolord/alpha-nvim) | dashboard inicial; configurado | [lua/plugin/ui.lua](../lua/plugin/ui.lua) | :Alpha / :AlphaRedraw / :AlphaRemap (plugin load) |
 | [auto-save.nvim](https://github.com/Pocco81/auto-save.nvim) | salvamento automático ao sair do buffer; configurado | [lua/plugin/editor.lua](../lua/plugin/editor.lua) | :ASToggle (plugin load; auto-save configurado enabled) |
 | [blink.cmp](https://github.com/saghen/blink.cmp) | completion LSP/path/snippets/Lua API; configurado | [lua/plugin/completion.lua](../lua/plugin/completion.lua) | :BlinkCmp {subcommand} (plugin load; subcomandos validados em plugin/blink-cmp.lua) |
-| [bufferline.nvim](https://github.com/akinsho/bufferline.nvim) | linha de buffers; configurado | [lua/plugin/ui.lua](../lua/plugin/ui.lua) | :BufferLinePick / :BufferLinePickClose / :BufferLineCycleNext / :BufferLineCyclePrev / :BufferLineCloseRight / :BufferLineCloseLeft / :BufferLineCloseOthers / :BufferLineMoveNext / :BufferLineMovePrev / :BufferLineSortByExtension / :BufferLineSortByDirectory / :BufferLineSortByRelativeDirectory / :BufferLineSortByTabs / :BufferLineGoToBuffer {n} / :BufferLineTogglePin / :BufferLineTabRename [name] / :BufferLineGroupClose {group} / :BufferLineGroupToggle {group} (após setup) |
+| [bufferline.nvim](https://github.com/akinsho/bufferline.nvim) | linha de buffers; configurado | [lua/plugin/bufferline.lua](../lua/plugin/bufferline.lua), carregado por [lua/plugin/ui.lua](../lua/plugin/ui.lua) | :BufferLinePick / :BufferLinePickClose / :BufferLineCycleNext / :BufferLineCyclePrev / :BufferLineCloseRight / :BufferLineCloseLeft / :BufferLineCloseOthers / :BufferLineMoveNext / :BufferLineMovePrev / :BufferLineSortByExtension / :BufferLineSortByDirectory / :BufferLineSortByRelativeDirectory / :BufferLineSortByTabs / :BufferLineGoToBuffer {n} / :BufferLineTogglePin / :BufferLineTabRename [name] / :BufferLineGroupClose {group} / :BufferLineGroupToggle {group} (após setup) |
 | [catppuccin](https://github.com/catppuccin/nvim) | colorscheme alternativo instalado, tema atual é Tokyo Night; instalado sem configuração | — | :Catppuccin {flavour} / :CatppuccinCompile (fonte presente, plugin não carregado/configurado) |
 | [Comment.nvim](https://github.com/numToStr/Comment.nvim) | comentários contextuais por Treesitter; configurado | [lua/plugin/editor.lua](../lua/plugin/editor.lua) | Sem comando próprio |
 | [conform.nvim](https://github.com/stevearc/conform.nvim) | formatting e format-on-save; configurado | [lua/plugin/lsp.lua](../lua/plugin/lsp.lua) | :ConformInfo (plugin load) |
@@ -108,7 +108,7 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | alpha-nvim | Dashboard setup; no custom mappings. |
 | auto-save.nvim | No custom mappings. |
 | blink.cmp | Insert <Tab>: visible menu accept → Copilot accept → local LuaSnip jump → tabout → fallback. Config also installs global Insert <Tab> for startup and Blink fallback. Default preset includes Insert <S-Tab> snippet_backward. Insert <Esc> dismisses visible Copilot suggestions while retaining Insert; otherwise hides completion and exits Insert. Insert <C-j>/<C-k> select next/previous item only while the Blink menu is visible; otherwise use the prior mapping/native behavior. |
-| bufferline.nvim | No custom mappings; bufferline display always enabled. |
+| bufferline.nvim | Barra sempre visível. O “x” e o clique direito fecham o buffer clicado usando `config.buffers.close`, preservando o layout e recusando alterações não salvas. |
 | catppuccin | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | Comment.nvim | No plugin default mappings retained by config; see configured mapping. |
 | conform.nvim | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
@@ -170,6 +170,8 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 `CopilotToggle`, `Templates`, `NotebookHealth`, `NewNotebook`, `PackAdd`, `PackDel` e `PackUpdate` continuam disponíveis. O suporte nativo de LSP e os atalhos de diagnóstico/formatação permanecem em `lua/plugin/lsp.lua`.
 
 `<leader>w` salva e fecha o buffer atual; `<leader>q` fecha apenas se não houver alterações não salvas. Ambos preservam as janelas e a lateral do explorer do Snacks enquanto houver outros buffers de edição listados, inclusive descarregados. Ao fechar o último, encerram a sessão com `qall`, sem criar um buffer vazio. Alterações não salvas continuam impedindo a saída.
+
+O “x” e o clique direito do Bufferline compartilham essa lógica de fechamento em `lua/config/buffers.lua`, usando o ID do buffer clicado. Isso também vale para buffers em segundo plano e quando o foco está no explorer. O último buffer encerra a sessão; buffers modificados precisam ser salvos ou descartados explicitamente.
 
 ## Reprodução da captura e dos testes
 

@@ -167,20 +167,7 @@ dashboard.config.layout = {
 require("alpha").setup(dashboard.config)
 
 -- bufferline
-require("bufferline").setup({
-	options = {
-		mode = "buffers",
-		diagnostics = "nvim_lsp",
-		offsets = { { filetype = "snacks_layout_box", text = "Explorer" } },
-		separator_style = "slant",
-		always_show_bufferline = true,
-		enforce_regular_tabs = true,
-	},
-	highlights = {
-		buffer_selected = { bold = true, italic = false },
-		indicator_selected = { bold = true },
-	},
-})
+require("plugin.bufferline")
 
 -- trouble
 require("trouble").setup({})

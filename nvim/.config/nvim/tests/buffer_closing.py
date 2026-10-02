@@ -1,4 +1,4 @@
-"""Exercise the close mappings with a real Snacks explorer and process exit."""
+"""Exercise keymaps and Bufferline mouse handlers with a real Snacks explorer."""
 import pathlib
 import subprocess
 import tempfile
@@ -13,6 +13,13 @@ vim.o.lines, vim.o.columns = 40, 120
 vim.o.hidden = true
 require("snacks").setup({ explorer = { enabled = true }, picker = { enabled = true } })
 require("config.keymaps")
+vim.cmd("packadd bufferline.nvim")
+require("plugin.bufferline")
+require("bufferline.commands")
+local function click_close(bufnr)
+  -- This is the callback referenced by the actual close icon's tabline segment.
+  _G.___bufferline_private.handle_close(bufnr)
+end
 local function close(key)
   local mapping = vim.fn.maparg(" " .. key, "n", false, true)
   assert(type(mapping.callback) == "function")
@@ -85,6 +92,69 @@ CASES = {
       assert(not ok, "qall should refuse unsaved changes")
       assert(vim.api.nvim_buf_is_valid(first) and vim.bo[first].modified)
       assert(vim.api.nvim_win_is_valid(main))
+      assert(vim.api.nvim_win_get_width(sidebar) == width)
+      vim.fn.writefile({"passed"}, ROOT .. "/exit-marker")
+      vim.cmd("qall!")
+    ''',
+    "bufferline x preserves sidebar and exits on last buffer": '''
+      click_close(second)
+      assert(vim.api.nvim_win_is_valid(main), "editing window was closed")
+      assert(vim.api.nvim_win_get_buf(main) == first)
+      assert(not vim.bo[second].buflisted)
+      assert(vim.api.nvim_win_get_width(sidebar) == width)
+      vim.api.nvim_create_autocmd("VimLeavePre", { callback = function()
+        vim.fn.writefile({"exited"}, ROOT .. "/exit-marker")
+      end })
+      click_close(first)
+      error("last-buffer close returned without exiting")
+    ''',
+    "bufferline x closes inactive target with explorer focused": '''
+      vim.api.nvim_set_current_win(sidebar)
+      click_close(first)
+      assert(not vim.bo[first].buflisted, "clicked buffer was not closed")
+      assert(vim.bo[second].buflisted)
+      assert(vim.api.nvim_win_get_buf(main) == second)
+      assert(vim.api.nvim_win_get_width(sidebar) == width)
+      assert(vim.api.nvim_get_current_win() == sidebar, "explorer focus changed")
+      vim.fn.writefile({"passed"}, ROOT .. "/exit-marker")
+      vim.cmd("qall!")
+    ''',
+    "bufferline x replaces target in all editing splits": '''
+      vim.cmd("vsplit")
+      local split = vim.api.nvim_get_current_win()
+      click_close(second)
+      assert(vim.api.nvim_win_is_valid(main) and vim.api.nvim_win_is_valid(split))
+      assert(vim.api.nvim_win_get_buf(main) == first)
+      assert(vim.api.nvim_win_get_buf(split) == first)
+      assert(vim.api.nvim_win_get_width(sidebar) == width)
+      vim.fn.writefile({"passed"}, ROOT .. "/exit-marker")
+      vim.cmd("qall!")
+    ''',
+    "bufferline x refuses unsaved inactive target": '''
+      vim.api.nvim_buf_set_lines(first, 0, -1, false, {"unsaved target"})
+      click_close(first)
+      assert(vim.bo[first].buflisted and vim.bo[first].modified)
+      assert(vim.api.nvim_win_get_buf(main) == second)
+      assert(vim.api.nvim_win_get_width(sidebar) == width)
+      assert(vim.fn.readfile(ROOT .. "/first.txt")[1] == "original")
+      vim.fn.writefile({"passed"}, ROOT .. "/exit-marker")
+      vim.cmd("qall!")
+    ''',
+    "bufferline last modified buffer prevents exit": '''
+      click_close(second)
+      vim.api.nvim_buf_set_lines(first, 0, -1, false, {"unsaved last"})
+      local ok = pcall(click_close, first)
+      assert(not ok, "last-buffer close should refuse unsaved changes")
+      assert(vim.bo[first].buflisted and vim.bo[first].modified)
+      assert(vim.api.nvim_win_is_valid(main))
+      assert(vim.api.nvim_win_get_width(sidebar) == width)
+      vim.fn.writefile({"passed"}, ROOT .. "/exit-marker")
+      vim.cmd("qall!")
+    ''',
+    "bufferline right click uses layout-preserving close": '''
+      _G.___bufferline_private.handle_click(second, 1, "r")
+      assert(vim.api.nvim_win_is_valid(main))
+      assert(vim.api.nvim_win_get_buf(main) == first)
       assert(vim.api.nvim_win_get_width(sidebar) == width)
       vim.fn.writefile({"passed"}, ROOT .. "/exit-marker")
       vim.cmd("qall!")
