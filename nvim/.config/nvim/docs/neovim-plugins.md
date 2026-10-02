@@ -14,18 +14,18 @@ O tabout é carregado por `lua/plugin/tabout.lua`, com `tabkey = ""`, `backwards
 | Tab antes dos mappings locais do Blink | Mesma precedência anterior → snippet nativo do Neovim → tabout → Tab original |
 | Esc em Insert | Sugestão Copilot visível: dispensa e mantém Insert; sem sugestão: fecha o menu do Blink e sai do Insert |
 | Ctrl-j / Ctrl-k em Insert | Com menu do Blink aberto: próximo/anterior item; com menu fechado: comportamento nativo ou mapping anterior |
-| Alt-k em Insert com LSP compatível | Abre/fecha a assinatura de função; ao abrir, fecha o menu do Blink se necessário |
+| Alt-k em Insert com LSP compatível | Com Blink e assinatura abertos: alterna qual fica por cima; só Blink: abre assinatura por cima sem fechar completion; sem Blink: abre/fecha assinatura |
 | Ctrl-Backspace / Ctrl-Delete em Insert | Apaga a palavra para trás/para frente a partir do cursor; Ctrl-Delete no fim da linha mantém o texto anterior |
 | Shift-Tab em Insert/Select | Snippet anterior → tabout para trás (somente Insert) → fallback original |
 | Tab / Shift-Tab em Normal | `:tabnext` / `:tabprev`, preservados |
 | Tab / Shift-Tab no cmdline (`:`, `/`, `?`) | Próxima/anterior sugestão do menu nativo, gerenciado pelo mini.cmdline |
 | Prompt, terminal, buffers especiais ou sem parser | O tabout não navega; os handlers anteriores permanecem responsáveis |
 
-Sem sugestão visível do Copilot, ou após rejeitá-la com `Esc`, Tab volta a tentar o salto do LuaSnip quando o menu do Blink estiver fechado.
+O Blink permite completion automática enquanto um snippet LuaSnip está ativo (`completion.trigger.show_in_snippet = true`), inclusive ao digitar nos campos seguintes depois de um salto. Com sugestões disponíveis, o menu pode abrir antes do próximo Tab; quando visível, sua aceitação continua tendo prioridade sobre o salto do snippet. Sem sugestão visível do Copilot, ou após rejeitá-la com `Esc`, Tab volta a tentar o salto do LuaSnip quando o menu do Blink estiver fechado.
 
-Alt-k alterna a assinatura do LSP conforme o estado da própria janela. Funciona com o menu de completion do Blink aberto ou fechado, mantém Insert e respeita o fechamento manual até a próxima abertura solicitada. O Blink não instala mapping para Alt-k; Ctrl-k continua selecionando o item anterior de completion.
+O Blink e a assinatura nativa do LSP podem ficar abertos ao mesmo tempo. Por padrão, o Blink sobrepõe a assinatura onde as janelas se cruzam. Com ambos visíveis, Alt-k alterna as camadas sem fechar as janelas, mudar o foco ou sair de Insert. A escolha persiste durante a mesma sessão de Insert, inclusive após atualizações da assinatura; sair e voltar a Insert restaura Blink por cima. Com só Blink visível, Alt-k abre a assinatura por cima; sem Blink, continua abrindo/fechando a assinatura e respeitando o fechamento manual. Tab mantém a precedência Blink → Copilot → salto local LuaSnip → tabout/fallback mesmo quando a assinatura está por cima. O Blink não instala mapping para Alt-k; Ctrl-k continua selecionando o item anterior de completion.
 
-Ctrl-Backspace apaga até o limite da palavra anterior; no início da linha não faz alterações e, na indentação, remove os espaços anteriores sem juntar linhas. Ctrl-Delete apaga para frente e não faz alterações no fim da linha. Backspace/Delete sem Ctrl mantêm a exclusão de um caractere. A suíte `tests/insert_editing_tui.py` passou 19 casos em terminal real, incluindo palavras parciais, espaços, pontuação, UTF-8 e limites de linha.
+Ctrl-Backspace apaga até o limite da palavra anterior; no início da linha não faz alterações e, na indentação, remove os espaços anteriores sem juntar linhas. Ctrl-Delete apaga para frente e não faz alterações no fim da linha. Ctrl-Backspace também aceita a sequência legada `Ctrl-h` (`0x08`), enviada por alguns terminais; por isso, Ctrl-h em Insert passa a apagar palavras também. Backspace (`0x7f`) e Delete sem Ctrl mantêm a exclusão de um caractere. A suíte `tests/insert_editing_tui.py` cobre sequências legadas e CSI-u, palavras parciais, espaços, pontuação, UTF-8 e limites de linha.
 
 Use `:TaboutToggle` para alternar o tabout sem remover os mappings do Blink. O plugin também registra `:Tabout` e `:TaboutBack` (depreciados pelo upstream) e os quatro mappings `<Plug>(Tabout)`, `<Plug>(TaboutBack)`, `<Plug>(TaboutMulti)` e `<Plug>(TaboutBackMulti)`. [API e requisitos oficiais](https://github.com/abecodes/tabout.nvim#more-complex-keybindings).
 
@@ -141,7 +141,7 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | nvim-highlight-colors | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | nvim-hlslens | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | nvim-lint | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
-| nvim-lspconfig | LSP buffer-local grn/gra/H/gK/grr/gri/grd/grD/gO/gW/grt; Insert <A-k> toggles native signature help, closing the Blink menu when open; Insert <C-k> navigates to the previous Blink item; global <leader>= format. |
+| nvim-lspconfig | LSP buffer-local grn/gra/H/gK/grr/gri/grd/grD/gO/gW/grt; Insert <A-k> alternates completion/signature layers while both are visible, or toggles native signature help when completion is closed; Insert <C-k> navigates to the previous Blink item; global <leader>= format. |
 | nvim-scrollbar | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
 | nvim-treesitter | No custom mapping; parser install and FileType setup. |
 | nvim-treesitter-context | Sem mapping específico definido na configuração; verificar defaults documentados no plugin. |
@@ -165,6 +165,8 @@ A coluna de comandos inclui os definidos nos fontes/documentação instalados. A
 | vim-visual-multi | Plugin default <C-n> starts/adds cursors (plugin mapping, may interact with editor mappings). |
 | which-key.nvim | No mappings added; registers <leader>s and <leader>g groups. |
 
+No explorer do Snacks, `T` em modo normal abre os templates usando a pasta selecionada (ou a pasta do arquivo selecionado) como destino. Após escolher o modelo, o input recebe o nome e eventuais subdiretórios, sem pedir a pasta novamente. O arquivo criado abre na janela principal e aparece na árvore. `<leader>st` mantém a seleção de pasta no fluxo global.
+
 ## Comandos próprios da configuração
 
 `CopilotToggle`, `Templates`, `NotebookHealth`, `NewNotebook`, `PackAdd`, `PackDel` e `PackUpdate` continuam disponíveis. O suporte nativo de LSP e os atalhos de diagnóstico/formatação permanecem em `lua/plugin/lsp.lua`.
@@ -182,6 +184,7 @@ python3 tests/tabout_tui.py
 python3 tests/signature_tui.py
 python3 tests/insert_editing_tui.py
 python3 tests/buffer_closing.py
+NVIM_LOG_FILE=/tmp/nvim-template-explorer-tests.log nvim --headless -n -u NONE -i NONE -c 'luafile tests/templates_explorer.lua'
 NVIM_LOG_FILE=/tmp/nvim-template-command-tests.log nvim --headless -n -u NONE -i NONE -l tests/templates_command.lua
 ```
 

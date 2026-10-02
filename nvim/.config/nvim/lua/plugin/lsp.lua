@@ -183,6 +183,7 @@ local insert_signature_opts = { focusable = false, close_events = { "InsertLeave
 local signature_help_group = vim.api.nvim_create_augroup("native-lsp-signature-help", { clear = true })
 local signature_menu_group = vim.api.nvim_create_augroup("native-lsp-signature-menu", { clear = true })
 local signature_hidden_by_user = {}
+local signature_on_top = {}
 
 local function insert_signature_win(bufnr)
 	if not vim.api.nvim_buf_is_valid(bufnr) then
@@ -201,31 +202,63 @@ local function close_insert_signature(bufnr)
 	end
 end
 
+local function signature_zindex(bufnr)
+	if not signature_on_top[bufnr] then
+		return 50
+	end
+	local top = 50
+	for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+		local buf = vim.api.nvim_win_get_buf(win)
+		if vim.bo[buf].filetype:match("^blink%-cmp") then
+			top = math.max(top, vim.api.nvim_win_get_config(win).zindex or 50)
+		end
+	end
+	-- Blink's scrollbar thumb is two layers above its menu/documentation.
+	return top + 3
+end
+
+local function apply_signature_layer(bufnr)
+	local win = insert_signature_win(bufnr)
+	if win then
+		vim.api.nvim_win_set_config(win, { zindex = signature_zindex(bufnr) })
+	end
+end
+
 local function show_insert_signature(bufnr, silent)
 	vim.schedule(function()
 		if
 			vim.api.nvim_get_current_buf() ~= bufnr
 			or not vim.api.nvim_get_mode().mode:match("^[is]")
 			or signature_hidden_by_user[bufnr]
-			or require("blink.cmp").is_menu_visible()
 			or #vim.lsp.get_clients({ bufnr = bufnr, method = "textDocument/signatureHelp" }) == 0
 		then
 			return
 		end
-		show_lsp_signature(vim.tbl_extend("force", { silent = silent }, insert_signature_opts))
+		show_lsp_signature(vim.tbl_extend(
+			"force",
+			{ silent = silent, zindex = signature_zindex(bufnr) },
+			insert_signature_opts
+		))
 	end)
 end
 
 local function toggle_insert_signature(bufnr)
-	if insert_signature_win(bufnr) then
+	local blink_visible = require("blink.cmp").is_menu_visible()
+	local win = insert_signature_win(bufnr)
+	if blink_visible and win then
+		signature_on_top[bufnr] = not signature_on_top[bufnr]
+		apply_signature_layer(bufnr)
+	elseif blink_visible then
+		signature_hidden_by_user[bufnr] = nil
+		signature_on_top[bufnr] = true
+		show_insert_signature(bufnr, false)
+	elseif win then
 		signature_hidden_by_user[bufnr] = true
+		signature_on_top[bufnr] = nil
 		close_insert_signature(bufnr)
 	else
 		signature_hidden_by_user[bufnr] = nil
-		local blink = require("blink.cmp")
-		if blink.is_menu_visible() then
-			blink.hide()
-		end
+		signature_on_top[bufnr] = nil
 		show_insert_signature(bufnr, false)
 	end
 end
@@ -234,22 +267,21 @@ vim.api.nvim_create_autocmd("User", {
 	group = signature_menu_group,
 	pattern = { "BlinkCmpMenuOpen", "BlinkCmpMenuClose" },
 	callback = function(event)
-		if event.match == "BlinkCmpMenuOpen" then
-			close_insert_signature(event.buf)
-		else
-			show_insert_signature(event.buf, true)
-		end
+		apply_signature_layer(event.buf)
+		show_insert_signature(event.buf, true)
 	end,
 })
 
--- A pending LSP response can arrive after Blink opens. Close that late float.
+-- Apply the current layer choice to floats created by asynchronous LSP responses.
 vim.api.nvim_create_autocmd("WinNew", {
 	group = signature_menu_group,
 	callback = function()
 		local bufnr = vim.api.nvim_get_current_buf()
 		vim.schedule(function()
-			if signature_hidden_by_user[bufnr] or require("blink.cmp").is_menu_visible() then
+			if signature_hidden_by_user[bufnr] then
 				close_insert_signature(bufnr)
+			else
+				apply_signature_layer(bufnr)
 			end
 		end)
 	end,
@@ -261,6 +293,14 @@ vim.api.nvim_create_autocmd("User", {
 	callback = function(event)
 		close_insert_signature(event.buf)
 		show_insert_signature(event.buf, true)
+	end,
+})
+
+vim.api.nvim_create_autocmd("BufWipeout", {
+	group = signature_menu_group,
+	callback = function(event)
+		signature_hidden_by_user[event.buf] = nil
+		signature_on_top[event.buf] = nil
 	end,
 })
 
@@ -310,7 +350,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		then
 			map("<A-k>", function()
 				toggle_insert_signature(event.buf)
-			end, "Toggle function signature", "i")
+			end, "Toggle completion/signature layer", "i")
 
 			vim.api.nvim_clear_autocmds({ group = signature_help_group, buffer = event.buf })
 			local trigger_characters = {}
@@ -359,6 +399,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 				buffer = event.buf,
 				callback = function()
 					signature_hidden_by_user[event.buf] = nil
+					signature_on_top[event.buf] = nil
 				end,
 			})
 		end

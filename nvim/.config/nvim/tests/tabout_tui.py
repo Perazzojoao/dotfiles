@@ -192,6 +192,22 @@ try:
     until(lambda: rpc('return vim.api.nvim_get_mode().mode')=='n')
     until(lambda: rpc('return not require("blink.cmp").is_menu_visible()'))
     print('PASS Esc with Blink menu and no Copilot closes menu and exits Insert mode')
+    # Exercise automatic triggering with the real Blink/LuaSnip engines. The
+    # deterministic provider supplies candidates; no cmp.show() opens this menu.
+    rpc('require("blink.cmp.config").sources.default={"audit"};require("blink.cmp.sources.lib").providers.audit.module.get_completions=function(_,context,callback) local col=vim.api.nvim_win_get_cursor(0)[2];local word=vim.api.nvim_get_current_line():sub(1,col):match("[%w_]+$") or "";callback({items={{label="done",kind=6,textEdit={newText="done",range={start={line=0,character=col-#word},["end"]={line=0,character=col}}}}},is_incomplete_forward=false,is_incomplete_backward=false}) end;require("blink.cmp.config").completion.menu.auto_show=true;return true')
+    prepare_insert_snippet()
+    rpc('vim.api.nvim_win_set_cursor(0,{1,4});return true')
+    os.write(master,b'o')
+    until(lambda: rpc('return require("blink.cmp").is_menu_visible() and require("luasnip").locally_jumpable(1)'))
+    print('PASS Blink auto-opens while typing inside an active LuaSnip placeholder')
+    press_and_expect(b'\t','fn(done, second)',7,'Tab accepts automatically opened Blink before advancing LuaSnip')
+    until(lambda: rpc('return not require("blink.cmp").is_menu_visible()'))
+    os.write(master,b'\t')
+    until(lambda: rpc('return vim.api.nvim_win_get_cursor(0)[2]')==9)
+    os.write(master,b'do')
+    until(lambda: rpc('return vim.api.nvim_get_current_line()=="fn(done, do)" and require("blink.cmp").is_menu_visible() and require("luasnip").locally_jumpable(1)'))
+    print('PASS Blink auto-opens again after Tab jumps to the next LuaSnip placeholder')
+    press_and_expect(b'\t','fn(done, done)',13,'Tab accepts Blink inside the next placeholder before the snippet exit')
     print('TABOUT_TUI_OK')
 
 finally:

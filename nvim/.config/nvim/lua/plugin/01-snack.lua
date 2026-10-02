@@ -46,11 +46,15 @@ require("snacks").setup({
 				exclude = { ".git" },
 				actions = {
 					mouse_confirm = confirm_explorer_item_under_mouse,
+					templates = function(picker)
+						require("templates.picker").from_explorer(picker)
+					end,
 				},
 				win = {
 					list = {
 						keys = {
 							["<LeftMouse>"] = "mouse_confirm",
+							["T"] = { "templates", desc = "Criar arquivo de template" },
 							-- A double click includes the first-click action above.
 							["<2-LeftMouse>"] = false,
 						},

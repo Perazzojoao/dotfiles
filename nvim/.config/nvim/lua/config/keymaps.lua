@@ -291,9 +291,9 @@ keymap("i", "<A-h>", "<Left>", { noremap = true, silent = true })
 keymap("i", "<A-l>", "<Right>", { noremap = true, silent = true })
 
 -- Deleting
-keymap("i", "<C-h>", "<Backspace>", { noremap = true, silent = true })
 keymap("i", "<C-l>", "<Delete>", { noremap = true, silent = true })
-keymap("i", "<C-BS>", function()
+-- Legacy terminals may send Ctrl-Backspace as Ctrl-H (byte 0x08).
+local function delete_word_backward()
 	local cursor = vim.api.nvim_win_get_cursor(0)
 	local prefix = vim.api.nvim_get_current_line():sub(1, cursor[2])
 
@@ -305,7 +305,10 @@ keymap("i", "<C-BS>", function()
 	end
 
 	return "<C-w>"
-end, { desc = "Delete word backward", expr = true, noremap = true, replace_keycodes = true, silent = true })
+end
+for _, lhs in ipairs({ "<C-BS>", "<C-h>" }) do
+	keymap("i", lhs, delete_word_backward, { desc = "Delete word backward", expr = true, noremap = true, replace_keycodes = true, silent = true })
+end
 keymap("i", "<C-Delete>", function()
 	local cursor = vim.api.nvim_win_get_cursor(0)
 	local line = vim.api.nvim_get_current_line()

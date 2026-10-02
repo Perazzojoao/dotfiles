@@ -95,12 +95,12 @@ require("blink.cmp").setup({
 		},
 		["<S-Tab>"] = { "snippet_backward", require("config.tabout").backward, "fallback" },
 		["<A-j>"] = { "select_next", "fallback" },
-		["<A-k>"] = false, -- Reserve Alt-k for native LSP signature help.
+		["<A-k>"] = false, -- Reserve Alt-k for native LSP signature visibility/layering.
 		["<Esc>"] = { handle_completion_escape, "fallback" },
 	},
 	appearance = { nerd_font_variant = "mono" },
 	completion = {
-		trigger = { show_in_snippet = false },
+		trigger = { show_in_snippet = true },
 		list = { selection = { auto_insert = false } },
 		menu = { border = "rounded", auto_show = true },
 		documentation = {

@@ -9,6 +9,18 @@ Também é possível executar `:Templates`, `:Templates all` ou
 Uma linguagem sem modelos mostra uma lista vazia. Inicialmente estão disponíveis
 `csharp/class`, `csharp/interface` e `csharp/enum`.
 
+No explorer do Snacks, pressione `T` em modo normal para criar um arquivo a
+partir de um template. O fluxo é `T → template → nome do arquivo`, sem o finder
+de pastas: uma pasta selecionada é o destino; um arquivo selecionado usa a pasta
+que o contém. A raiz da árvore também pode ser selecionada. O título do input
+mostra o destino relativo à raiz do projeto, usando `. (raiz)` para a própria raiz.
+O input aceita
+subpastas, como `Entities/TestEntity`, e usa o mesmo cuidado com extensões,
+namespace e arquivos existentes. O novo arquivo abre na janela principal e o
+explorer mantém a lateral, atualizando a árvore para mostrar o arquivo criado.
+O filtro de linguagem usa o arquivo selecionado, ou o buffer principal quando
+uma pasta está selecionada; `Alt-A` permite mostrar todas as linguagens.
+
 Selecione um modelo, escolha a pasta de destino em um segundo finder do Snacks,
 informe o caminho do novo arquivo e confirme. A opção `. (raiz)` cria o arquivo
 na raiz do projeto. As outras opções mostram as pastas existentes com seus
@@ -89,10 +101,13 @@ Na raiz desta configuração, após instalar os plugins:
 ```sh
 NVIM_LOG_FILE=/tmp/nvim-template-tests.log nvim --headless -n -u NONE -i NONE -c 'luafile tests/templates.lua'
 XDG_DATA_HOME=/tmp/nvim-template-picker-data NVIM_LOG_FILE=/tmp/nvim-template-picker-tests.log nvim --headless -n -u NONE -i NONE -c 'luafile tests/templates_picker.lua'
+NVIM_LOG_FILE=/tmp/nvim-template-explorer-tests.log nvim --headless -n -u NONE -i NONE -c 'luafile tests/templates_explorer.lua'
 ```
 
 O primeiro comando valida criação, namespace, isolamento e preservação de
 arquivos/buffers. Com `TEMPLATES_TEST_DOTNET=1`, também compila os três modelos
 gerados usando o SDK .NET instalado. O segundo usa o picker real do Snacks e
 callbacks agendados para verificar filtros, alternância, seleção da pasta,
-criação na raiz ou em subpastas, cancelamentos, confirmação e inputs.
+criação na raiz ou em subpastas, cancelamentos, confirmação e inputs. O terceiro
+valida o atalho local `T` e o fluxo no explorer, incluindo diretório ou arquivo
+selecionado, atualização da árvore, layout e proteção contra sobrescrita.
